@@ -57,19 +57,19 @@ const collisionPadding = 5;
 const motionStrength = 0.00008;
 const initialSpeed = 0.15;
 
+// ---- SUPPLY ADDED TO EACH TOKEN ----
 const tokensData = [
-  {pairId:"GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo:"https://i.postimg.cc/FH603Pk6/20250813-191724.jpg"},
-  {pairId:"4MzZA4pqd7HqU9gQKuLSwtC5nUxFpmw5PvRmGoSGMNx", logo:"https://via.placeholder.com/128/ff0000/000000?text=2"},
-  {pairId:"3kZxw7r663dNYqbw8zGCK7NRrcBMXMcRnv3heak4F7mC", logo:"https://i.postimg.cc/bYLD16KR/0-EJccfm2-400x400.jpg"},
-  {pairId:"ENYbntd3KgJJJvMqbe5Awtqu8jkVjnczU8TK46q3odnG", logo:"https://i.postimg.cc/7PBh552s/Gy-Ud-RTy-W4-AM-G6-C.jpg"},
-  {pairId:"8eQTQLnBmEgeY9avVjrqqgX8ZVr8MRFrXEHpMrx6DGff", logo:"https://i.postimg.cc/zXBL7CNY/H_NjEv35_400x400.jpg"},
-  {pairId:"3BfzLnxHVaYJNrAP6SxfT7Z8nFe5ybKL6JMTuCrNR8zZ", logo:"https://i.postimg.cc/tJ1jZCKw/frame-00-delay-0-07s.gif"},
-  {pairId:"C53QBLiDTYhQEgsHKQDS4kEAwEKty1nDkYxF6w67dvBh", logo:"https://i.postimg.cc/q7Qn6rVR/Orynth1.png"},
-  {pairId:"8Lvqv2jgNvcx1NDtMHd5Ahx8ZUjETfLwygq9MtDfPHxe", logo:"https://i.postimg.cc/3xjHDqq8/FHCTY98-B-400x400.jpg"},
-  {pairId:"3HP2Gg5sTaNta2ztzrRCA63btYSeyptASkGLcyQXWfBU", logo:"https://i.postimg.cc/T2mG6hc5/Gx85g-A2b-QAA3ea9.jpg"},
-  {pairId:"DDizsNbsgwgX3icRb6JQ8vFrRa5cN5Nuj6u63dRAoDQv", logo:"https://i.postimg.cc/sgv2YFmV/frame_00_delay-0.07s.png"},
-  {pairId:"3Ko8MN8yqmGBSjNKaoTqapbDLcybecR6zHSQ9o5hHV6i", logo:"https://i.postimg.cc/xjprR7Hf/image-8.png"},
-  {pairId:"c9EQnny8sBVrkMCKvVua1AQTRSXW1TDw1zLwFLHvRXh", logo:"https://i.postimg.cc/KvxtQGXL/Kkhc6-BUo-400x400.jpg"}
+  {pairId:"GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo:"https://i.postimg.cc/FH603Pk6/20250813-191724.jpg", supply:998918894},
+  {pairId:"ENYbntd3KgJJJvMqbe5Awtqu8jkVjnczU8TK46q3odnG", logo:"https://i.postimg.cc/7PBh552s/Gy-Ud-RTy-W4-AM-G6-C.jpg", supply:919735497},
+  {pairId:"8eQTQLnBmEgeY9avVjrqqgX8ZVr8MRFrXEHpMrx6DGff", logo:"https://i.postimg.cc/zXBL7CNY/H_NjEv35_400x400.jpg", supply:991423286},
+  {pairId:"3BfzLnxHVaYJNrAP6SxfT7Z8nFe5ybKL6JMTuCrNR8zZ", logo:"https://i.postimg.cc/tJ1jZCKw/frame-00-delay-0-07s.gif", supply:999973170},
+  {pairId:"C53QBLiDTYhQEgsHKQDS4kEAwEKty1nDkYxF6w67dvBh", logo:"https://i.postimg.cc/q7Qn6rVR/Orynth1.png", supply:999987561},
+  {pairId:"8Lvqv2jgNvcx1NDtMHd5Ahx8ZUjETfLwygq9MtDfPHxe", logo:"https://i.postimg.cc/3xjHDqq8/FHCTY98-B-400x400.jpg", supply:999822597},
+  {pairId:"3HP2Gg5sTaNta2ztzrRCA63btYSeyptASkGLcyQXWfBU", logo:"https://i.postimg.cc/T2mG6hc5/Gx85g-A2b-QAA3ea9.jpg", supply:978962065},
+  {pairId:"DDizsNbsgwgX3icRb6JQ8vFrRa5cN5Nuj6u63dRAoDQv", logo:"https://i.postimg.cc/sgv2YFmV/frame_00_delay-0.07s.png", supply:999913756},
+  {pairId:"3kZxw7r663dNYqbw8zGCK7NRrcBMXMcRnv3heak4F7mC", logo:"https://i.postimg.cc/bYLD16KR/0-EJccfm2-400x400.jpg", supply:985372784},
+  {pairId:"3Ko8MN8yqmGBSjNKaoTqapbDLcybecR6zHSQ9o5hHV6i", logo:"https://i.postimg.cc/xjprR7Hf/image-8.png", supply:828514573},
+  {pairId:"c9EQnny8sBVrkMCKvVua1AQTRSXW1TDw1zLwFLHvRXh", logo:"https://i.postimg.cc/KvxtQGXL/Kkhc6BUo_400x400.jpg", supply:996370291}
 ];
 
 async function fetchPair(pair){
@@ -80,11 +80,12 @@ async function fetchPair(pair){
     return {
       ticker: p.baseToken.symbol,
       price: Number(p.priceUsd),
-      mcap: Number(p.liquidity?.usd) || 0,
       change24: Number(p.priceChange?.h24) || 0,
       change6: Number(p.priceChange?.h6) || 0,
       change1: Number(p.priceChange?.h1) || 0,
-      logo: pair.logo
+      logo: pair.logo,
+      supply: pair.supply,
+      pairId: pair.pairId
     };
   } catch(e){ console.warn("Error", pair.pairId); return null; }
 }
@@ -124,7 +125,7 @@ const circles = node.append("circle")
   .attr("stroke-width",3)
   .style("filter", d=>d["change"+currentPeriod]>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 
-// HOVER: only highlight hovered bubble
+// Hover
 node.on("mouseover", function(event,d){
   d3.select(this).select("circle")
     .style("stroke","#fff")
@@ -150,19 +151,55 @@ node.append("image")
 node.append("text").attr("dy",-4).text(d=>d.ticker).style("text-shadow","1px 1px 2px #000");
 node.append("text").attr("dy",16).text(d=> (d["change"+currentPeriod]>0?"+":"") + d["change"+currentPeriod].toFixed(1)+"%").style("text-shadow","1px 1px 2px #000");
 
-node.on("click",(event,d)=>{
-  const change = d["change"+currentPeriod];
-  popup.innerHTML = `<span class="close">✕</span>
-    <b>${d.ticker}</b><br>
-    Price: $${d.price.toFixed(4)}<br>
-    MCAP: $${(d.mcap/1e6).toFixed(2)}M<br>
-    Change${currentPeriod}h: <span style="color:${change>=0?'#16ff00':'#ff3d3d'}">${(change>0?"+":"")+change.toFixed(2)}%</span>`;
-  popup.style.top = "20px"; popup.style.opacity="1";
-  popup.querySelector(".close").addEventListener("click",()=>{popup.style.opacity="0"; popup.style.top="-200px";});
+// ---- POPUP ----
+let popupInterval;
+
+function updatePopup(d) {
+  return async function() {
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+      const p = (await res.json()).pairs?.[0];
+      if (!p?.baseToken?.symbol) return;
+
+      const price = Number(p.priceUsd);
+      const change = Number(p["priceChange"]?.[`h${currentPeriod}`] || 0);
+      const mcap = Math.round(price * d.supply);
+      const mcapFormatted = mcap.toLocaleString('en-US');
+
+      popup.innerHTML = `<span class="close">✕</span>
+        <b>${p.baseToken.symbol}</b><br>
+        Price: $${price.toFixed(4)}<br>
+        MCAP: $${mcapFormatted}<br>
+        Change ${currentPeriod}h: <span style="color:${change>=0?'#16ff00':'#ff3d3d'}">${(change>0?"+":"")+change.toFixed(2)}%</span><br>
+        <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
+    } catch(e){ console.warn("Error updating popup", d.pairId); }
+  };
+}
+
+node.on("click", (event, d) => {
+  if (popupInterval) clearInterval(popupInterval);
+  const updater = updatePopup(d);
+  updater(); // show immediately
+  popupInterval = setInterval(updater, 60000); // refresh every 60s
+
+  popup.style.top = "20px";
+  popup.style.opacity = "1";
+
+  const closeBtn = popup.querySelector(".close");
+  if (closeBtn) closeBtn.onclick = () => {
+    popup.style.opacity = "0";
+    popup.style.top = "-200px";
+    clearInterval(popupInterval);
+  };
+
   event.stopPropagation();
 });
 
-document.addEventListener("click",()=>{ popup.style.opacity="0"; popup.style.top="-200px"; });
+document.addEventListener("click",()=>{ 
+  popup.style.opacity = "0"; 
+  popup.style.top="-200px"; 
+  if(popupInterval) clearInterval(popupInterval);
+});
 
 let mouse = {x:width/2, y:height/2};
 svg.on("mousemove",(event)=>{ const [mx,my] = d3.pointer(event); mouse.x=mx; mouse.y=my; });
@@ -208,4 +245,3 @@ document.querySelectorAll("#buttons button").forEach(btn=>{
 </script>
 </body>
 </html>
-
