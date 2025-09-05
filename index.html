@@ -21,6 +21,7 @@ text { font-weight:700; pointer-events:none; font-size:12px; text-anchor:middle;
 #fund { margin-top:8px; font-size:12px; }
 #fund span.wallet { color:#fff; }
 #fund span.label { color:orange; font-weight:700; margin-right:4px; }
+#popup img { vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -57,9 +58,9 @@ const collisionPadding = 5;
 const motionStrength = 0.00008;
 const initialSpeed = 0.15;
 
-// ---- SUPPLY ADDED TO EACH TOKEN ----
+// Tokens
 const tokensData = [
-  {pairId:"GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo:"https://i.postimg.cc/FH603Pk6/20250813-191724.jpg", supply:998918894},
+  {pairId:"GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo:"https://i.postimg.cc/FH603Pk6/20250813-191724.jpg", supply:998918894, xUrl:"https://x.com/example", webUrl:"https://example.com"},
   {pairId:"ENYbntd3KgJJJvMqbe5Awtqu8jkVjnczU8TK46q3odnG", logo:"https://i.postimg.cc/7PBh552s/Gy-Ud-RTy-W4-AM-G6-C.jpg", supply:919735497},
   {pairId:"8eQTQLnBmEgeY9avVjrqqgX8ZVr8MRFrXEHpMrx6DGff", logo:"https://i.postimg.cc/zXBL7CNY/H_NjEv35_400x400.jpg", supply:991423286},
   {pairId:"3BfzLnxHVaYJNrAP6SxfT7Z8nFe5ybKL6JMTuCrNR8zZ", logo:"https://i.postimg.cc/tJ1jZCKw/frame-00-delay-0-07s.gif", supply:999973170},
@@ -74,6 +75,8 @@ const tokensData = [
   {pairId:"82Q6L714avSh7zE6J43r4u1VUXQ4uYd7C7kHF8T1heAZ", logo:"https://i.postimg.cc/HxBxpnD5/concentrtic.png", supply:999952763}
 ];
 
+let currentPeriod = "24";
+
 async function fetchPair(pair){
   try {
     const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pair.pairId}`);
@@ -87,17 +90,19 @@ async function fetchPair(pair){
       change1: Number(p.priceChange?.h1) || 0,
       logo: pair.logo,
       supply: pair.supply,
-      pairId: pair.pairId
+      pairId: pair.pairId,
+      xUrl: pair.xUrl,
+      webUrl: pair.webUrl
     };
   } catch(e){ console.warn("Error", pair.pairId); return null; }
 }
 
+// ----- INITIAL FETCH -----
 let tokens = (await Promise.allSettled(tokensData.map(fetchPair)))
   .filter(r=>r.status==="fulfilled" && r.value)
   .map(r=>r.value);
 
-let currentPeriod = "24";
-
+// ----- COMPUTE RADIUS -----
 function computeRadius(period){
   const scale = d3.scaleSqrt()
     .domain([0,d3.max(tokens,d=>Math.abs(d["change"+period]))])
@@ -107,6 +112,7 @@ function computeRadius(period){
 
 computeRadius(currentPeriod);
 
+// ----- INITIAL POSITIONS -----
 const padding = 10;
 tokens.forEach((d,i)=>{
   const angle = (i / tokens.length) * Math.PI * 2;
@@ -116,10 +122,12 @@ tokens.forEach((d,i)=>{
   d.vy = (Math.random()-0.5)*initialSpeed;
 });
 
+// ----- CREATE NODES -----
 const node = svg.selectAll("g").data(tokens).enter().append("g")
   .attr("transform", d=>`translate(${d.x},${d.y})`)
   .style("cursor","pointer");
 
+// Circle
 const circles = node.append("circle")
   .attr("r", d=>d.r)
   .attr("fill","none")
@@ -139,6 +147,7 @@ node.on("mouseover", function(event,d){
     .style("filter", d["change"+currentPeriod]>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 });
 
+// Clip and logo
 node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
   .append("circle").attr("r",d=>d.r*0.85).attr("cx",0).attr("cy",0);
 
@@ -150,12 +159,35 @@ node.append("image")
   .attr("height", d=>2*d.r*0.85)
   .attr("clip-path",(d,i)=>`url(#clip-${i})`);
 
-node.append("text").attr("dy",-4).text(d=>d.ticker).style("text-shadow","1px 1px 2px #000");
-node.append("text").attr("dy",16).text(d=> (d["change"+currentPeriod]>0?"+":"") + d["change"+currentPeriod].toFixed(1)+"%").style("text-shadow","1px 1px 2px #000");
+// ----- TEXT WITH BACKGROUND -----
+function addTextWithBackground(g, textStr, dy) {
+  const text = g.append("text")
+    .attr("dy", dy)
+    .text(textStr)
+    .attr("text-anchor","middle")
+    .attr("fill","#fff")
+    .attr("font-weight","700")
+    .style("pointer-events","none")
+    .style("text-shadow","2px 2px 4px #000");
 
-// ---- POPUP ----
+  const bbox = text.node().getBBox();
+  g.insert("rect", "text")
+    .attr("x", bbox.x - 4)
+    .attr("y", bbox.y - 2)
+    .attr("width", bbox.width + 8)
+    .attr("height", bbox.height + 4)
+    .attr("rx", 3)
+    .attr("fill", "rgba(0,0,0,0.5)");
+}
+
+// Initial texts
+node.each(function(d){
+  addTextWithBackground(d3.select(this), d.ticker, -4);
+  addTextWithBackground(d3.select(this), (d["change"+currentPeriod]>0?"+":"") + d["change"+currentPeriod].toFixed(1)+"%", 16);
+});
+
+// ----- POPUP WITH SOCIAL ICONS -----
 let popupInterval;
-
 function updatePopup(d) {
   return async function() {
     try {
@@ -165,14 +197,30 @@ function updatePopup(d) {
 
       const price = Number(p.priceUsd);
       const change = Number(p["priceChange"]?.[`h${currentPeriod}`] || 0);
+      d["change"+currentPeriod] = change;
       const mcap = Math.round(price * d.supply);
       const mcapFormatted = mcap.toLocaleString('en-US');
 
+      const g = d3.selectAll("g").filter(dd=>dd.pairId===d.pairId);
+      g.selectAll("text").remove();
+      g.selectAll("rect").remove();
+      addTextWithBackground(g, d.ticker, -4);
+      addTextWithBackground(g, (change>0?"+":"")+change.toFixed(1)+"%", 16);
+
+      g.select("circle")
+        .style("stroke", change>=0?"#16ff00":"#ff3d3d")
+        .style("filter", change>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+
+      let socialsHTML = '';
+      if(d.xUrl) socialsHTML += `<a href="${d.xUrl}" target="_blank"><img src="https://i.postimg.cc/ncpwFVXC/XICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
+      if(d.webUrl) socialsHTML += `<a href="${d.webUrl}" target="_blank"><img src="https://i.postimg.cc/9Fbgr391/WICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
+
       popup.innerHTML = `<span class="close">✕</span>
-        <b>${p.baseToken.symbol}</b><br>
+        <b style="color:yellow">${p.baseToken.symbol}</b><br>
         Price: $${price.toFixed(4)}<br>
         MCAP: $${mcapFormatted}<br>
         Change ${currentPeriod}h: <span style="color:${change>=0?'#16ff00':'#ff3d3d'}">${(change>0?"+":"")+change.toFixed(2)}%</span><br>
+        ${socialsHTML}
         <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
     } catch(e){ console.warn("Error updating popup", d.pairId); }
   };
@@ -181,9 +229,8 @@ function updatePopup(d) {
 node.on("click", (event, d) => {
   if (popupInterval) clearInterval(popupInterval);
   const updater = updatePopup(d);
-  updater(); // show immediately
-  popupInterval = setInterval(updater, 60000); // refresh every 60s
-
+  updater();
+  popupInterval = setInterval(updater, 60000);
   popup.style.top = "20px";
   popup.style.opacity = "1";
 
@@ -193,7 +240,6 @@ node.on("click", (event, d) => {
     popup.style.top = "-200px";
     clearInterval(popupInterval);
   };
-
   event.stopPropagation();
 });
 
@@ -206,45 +252,65 @@ document.addEventListener("click",()=>{
 let mouse = {x:width/2, y:height/2};
 svg.on("mousemove",(event)=>{ const [mx,my] = d3.pointer(event); mouse.x=mx; mouse.y=my; });
 
+// ----- BUBBLE ANIMATION & COLLISION -----
 function animate(){
   tokens.forEach(d=>{
     d.x += d.vx; d.y += d.vy;
-    d.vx += (mouse.x-d.x)*motionStrength;
-    d.vy += (mouse.y-d.y)*motionStrength;
-    d.x = Math.max(d.r, Math.min(width-d.r,d.x));
-    d.y = Math.max(d.r, Math.min(height-d.r,d.y));
+    d.vx += (mouse.x - d.x) * motionStrength;
+    d.vy += (mouse.y - d.y) * motionStrength;
+    d.x = Math.max(d.r, Math.min(width - d.r, d.x));
+    d.y = Math.max(d.r, Math.min(height - d.r, d.y));
   });
+
   for(let i=0;i<tokens.length;i++){
     for(let j=i+1;j<tokens.length;j++){
       const a=tokens[i], b=tokens[j];
-      const dx=b.x-a.x, dy=b.y-a.y, dist=Math.sqrt(dx*dx+dy*dy), minDist=a.r+b.r+collisionPadding;
+      const dx=b.x - a.x, dy=b.y - a.y, dist=Math.sqrt(dx*dx + dy*dy), minDist=a.r+b.r+collisionPadding;
       if(dist<minDist){
         const angle=Math.atan2(dy,dx), overlap=(minDist-dist)*0.5;
-        a.x-=Math.cos(angle)*overlap; a.y-=Math.sin(angle)*overlap;
-        b.x+=Math.cos(angle)*overlap; b.y+=Math.sin(angle)*overlap;
+        a.x -= Math.cos(angle)*overlap; a.y -= Math.sin(angle)*overlap;
+        b.x += Math.cos(angle)*overlap; b.y += Math.sin(angle)*overlap;
       }
     }
   }
+
   node.attr("transform",d=>`translate(${d.x},${d.y})`);
   requestAnimationFrame(animate);
 }
-
 animate();
 
+// ----- PERIOD BUTTONS -----
 document.querySelectorAll("#buttons button").forEach(btn=>{
-  btn.addEventListener("click",()=>{
+  btn.addEventListener("click", async ()=>{
     currentPeriod=btn.dataset.period;
     document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     computeRadius(currentPeriod);
-    node.select("circle").attr("r",d=>d.r).attr("stroke", d=>d["change"+currentPeriod]>=0?"#16ff00":"#ff3d3d");
-    node.select("clipPath circle").attr("r",d=>d.r*0.85);
-    node.select("image").attr("x",d=>-d.r*0.85).attr("y",d=>-d.r*0.85).attr("width",d=>2*d.r*0.85).attr("height",d=>2*d.r*0.85);
-    node.selectAll("text").filter((d,i)=>i%2===1).text(d=> (d["change"+currentPeriod]>0?"+":"") + d["change"+currentPeriod].toFixed(1) + "%");
+
+    const updatedTokens = await Promise.all(tokens.map(fetchPair));
+    updatedTokens.forEach((ut,i)=>{ if(ut) Object.assign(tokens[i], ut); });
+
+    node.each(function(d){
+      d3.select(this).selectAll("text").remove();
+      d3.select(this).selectAll("rect").remove();
+      addTextWithBackground(d3.select(this), d.ticker, -4);
+      addTextWithBackground(d3.select(this), (d["change"+currentPeriod]>0?"+":"") + d["change"+currentPeriod].toFixed(1)+"%", 16);
+
+      d3.select(this).select("circle")
+        .attr("r", d.r)
+        .style("stroke", d["change"+currentPeriod]>=0?"#16ff00":"#ff3d3d")
+        .style("filter", d["change"+currentPeriod]>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+
+      d3.select(this).select("clipPath circle").attr("r", d.r*0.85);
+      d3.select(this).select("image")
+        .attr("x", -d.r*0.85)
+        .attr("y", -d.r*0.85)
+        .attr("width", 2*d.r*0.85)
+        .attr("height", 2*d.r*0.85);
+    });
   });
 });
 })();
 </script>
 </body>
 </html>
-
