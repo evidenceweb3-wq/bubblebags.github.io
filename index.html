@@ -1,116 +1,116 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>BeforeSatoshi Live Bubble Map Organic</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      background: #0a0a0f;
-      font-family: sans-serif;
-      color: #fff;
-    }
-    header { text-align: center; margin: 8px 0; }
-    header h2 { font-size: 14px; margin: 0; color: #fff; font-weight: 400; }
-    header h1 { font-size: 24px; margin: 0; }
-    header h1 .before { color: #fff; }
-    header h1 .satoshi { color: #ff8c00; }
-    #buttons { margin-bottom: 8px; }
-    button {
-      margin: 0 4px;
-      padding: 4px 10px;
-      border: none;
-      border-radius: 4px;
-      background: #222;
-      color: #fff;
-      cursor: pointer;
-    }
-    button.active { background: #ff8c00; color: #000; }
-    #container {
-      width: 80vmin;
-      height: 80vmin;
-      background: #111;
-      border: 2px solid #ff8c00;
-      border-radius: 12px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 0 25px #ff8c00;
-      user-select: none;
-    }
-    svg { width: 100%; height: 100%; }
-    text {
-      font-weight: 700;
-      pointer-events: none;
-      font-size: 12px;
-      text-anchor: middle;
-      fill: #fff;
-      text-shadow: 1px 1px 2px #000;
-    }
-    #popup {
-      position: absolute;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      border: 2px solid #ff8c00;
-      border-radius: 10px;
-      padding: 10px 15px;
-      color: #fff;
-      opacity: 0;
-      transition: 0.3s;
-      z-index: 10;
-    }
-    #popup .close { cursor: pointer; float: right; margin-left: 10px; }
-    #fund { margin-top: 8px; font-size: 12px; }
-    #fund span.wallet { color: #fff; }
-    #fund span.label { color: orange; font-weight: 700; margin-right: 4px; }
-    #popup img { vertical-align: middle; }
-  </style>
+<meta charset="UTF-8">
+<title>BeforeSatoshi Live Bubble Map Organic</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: #0a0a0f;
+  font-family: sans-serif;
+  color: #fff;
+}
+header { text-align: center; margin: 8px 0; }
+header h2 { font-size: 14px; margin: 0; color: #fff; font-weight: 400; }
+header h1 { font-size: 24px; margin: 0; }
+header h1 .before { color: #fff; }
+header h1 .satoshi { color: #ff8c00; }
+#buttons { margin-bottom: 8px; }
+button {
+  margin: 0 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+button.active { background: #ff8c00; color: #000; }
+#container {
+  width: 80vmin;
+  height: 80vmin;
+  background: #111;
+  border: 2px solid #ff8c00;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px #ff8c00;
+  user-select: none;
+}
+svg { width: 100%; height: 100%; }
+text {
+  font-weight: 700;
+  pointer-events: none;
+  font-size: 12px;
+  text-anchor: middle;
+  fill: #fff;
+  text-shadow: 1px 1px 2px #000;
+}
+#popup {
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 2px solid #ff8c00;
+  border-radius: 10px;
+  padding: 10px 15px;
+  color: #fff;
+  opacity: 0;
+  transition: 0.3s;
+  z-index: 10;
+}
+#popup .close { cursor: pointer; float: right; margin-left: 10px; }
+#fund { margin-top: 8px; font-size: 12px; }
+#fund span.wallet { color: #fff; }
+#fund span.label { color: orange; font-weight: 700; margin-right: 4px; }
+#popup img { vertical-align: middle; }
+</style>
 </head>
 <body>
 
-  <header>
-    <h2>Powered By</h2>
-    <h1><span class="before">Before</span> <span class="satoshi">Satoshi</span></h1>
-  </header>
+<header>
+  <h2>Powered By</h2>
+  <h1><span class="before">Before</span> <span class="satoshi">Satoshi</span></h1>
+</header>
 
-  <div id="buttons">
-    <button data-period="1">1h</button>
-    <button data-period="6">6h</button>
-    <button data-period="24" class="active">24h</button>
-  </div>
+<div id="buttons">
+  <button data-period="1">1h</button>
+  <button data-period="6">6h</button>
+  <button data-period="24" class="active">24h</button>
+</div>
 
-  <div id="container">
-    <svg id="svg"></svg>
-    <div id="popup"></div>
-  </div>
+<div id="container">
+  <svg id="svg"></svg>
+  <div id="popup"></div>
+</div>
 
-  <div id="fund">
-    <span class="label">FUND US:</span>
-    <span class="wallet">HFs2KJxfp6jraXc69v2ouuDNTVfTm8er78UYQqqWuQP5</span>
-  </div>
+<div id="fund">
+  <span class="label">FUND US:</span>
+  <span class="wallet">HFs2KJxfp6jraXc69v2ouuDNTVfTm8er78UYQqqWuQP5</span>
+</div>
 
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script>
-    (async function () {
-      const container = document.getElementById("container");
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      const svg = d3.select("#svg");
-      const popup = document.getElementById("popup");
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+(async function () {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const svg = d3.select("#svg");
+  const popup = document.getElementById("popup");
 
-      const minRadius = 25;
-      const maxRadius = 80;
-      const collisionPadding = 5;
-      const motionStrength = 0.00008;
-      const initialSpeed = 0.15;
+  const minRadius = 25;
+  const maxRadius = 80;
+  const collisionPadding = 2;
+  const motionStrength = 0.00008;
+  const initialSpeed = 0.15;
 
-      // Tokens
+  // Tokens
       const tokensData = [
         { pairId: "GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo: "https://i.postimg.cc/FH603Pk6/20250813-191724.jpg", supply: 998918894, xUrl: "https://x.com/example", webUrl: "https://example.com" },
         { pairId: "ENYbntd3KgJJJvMqbe5Awtqu8jkVjnczU8TK46q3odnG", logo: "https://i.postimg.cc/7PBh552s/Gy-Ud-RTy-W4-AM-G6-C.jpg", supply: 919735497 },
@@ -137,280 +137,229 @@
         
       ];
 
-      let currentPeriod = "24";
+  let currentPeriod = "24";
 
-      async function fetchPair(pair) {
-        try {
-          const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pair.pairId}`);
-          const p = (await res.json()).pairs?.[0];
-          if (!p?.baseToken?.symbol) return null;
-          return {
-            ticker: p.baseToken.symbol,
-            price: Number(p.priceUsd),
-            change24: Number(p.priceChange?.h24) || 0,
-            change6: Number(p.priceChange?.h6) || 0,
-            change1: Number(p.priceChange?.h1) || 0,
-            logo: pair.logo,
-            supply: pair.supply,
-            pairId: pair.pairId,
-            xUrl: pair.xUrl,
-            webUrl: pair.webUrl
-          };
-        } catch (e) { console.warn("Error", pair.pairId); return null; }
-      }
+  async function fetchPair(pair) {
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${pair.pairId}`);
+      const p = (await res.json()).pairs?.[0];
+      if (!p?.baseToken?.symbol) return null;
+      return {
+        ticker: p.baseToken.symbol,
+        price: Number(p.priceUsd),
+        change24: Number(p.priceChange?.h24) || 0,
+        change6: Number(p.priceChange?.h6) || 0,
+        change1: Number(p.priceChange?.h1) || 0,
+        logo: pair.logo,
+        supply: pair.supply,
+        pairId: pair.pairId,
+        xUrl: pair.xUrl,
+        webUrl: pair.webUrl
+      };
+    } catch (e) { console.warn("Error", pair.pairId); return null; }
+  }
 
-      // ----- INITIAL FETCH -----
-      let tokens = (await Promise.allSettled(tokensData.map(fetchPair)))
-        .filter(r => r.status === "fulfilled" && r.value)
-        .map(r => r.value);
+  // ----- INITIAL FETCH -----
+  let tokens = (await Promise.allSettled(tokensData.map(fetchPair)))
+    .filter(r => r.status === "fulfilled" && r.value)
+    .map(r => r.value);
 
-      // helper: always get numeric change for the current period
-      function getChange(d) {
-        return Number(d["change" + currentPeriod] || 0);
-      }
+  function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
-      // ----- COMPUTE RADIUS -----
-      function computeRadius(period) {
-        const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
-        const scale = d3.scaleSqrt()
-          .domain([0, maxVal])
-          .range([minRadius, maxRadius]);
-        tokens.forEach(d => d.r = scale(Math.abs(Number(d["change" + period] || 0))));
-      }
+  function computeRadius(period) {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
 
-      computeRadius(currentPeriod);
+  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-      // ----- INITIAL POSITIONS -----
-      const padding = 10;
-      tokens.forEach((d, i) => {
-        const angle = (i / tokens.length) * Math.PI * 2;
-        d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
-        d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
-        d.vx = (Math.random() - 0.5) * initialSpeed;
-        d.vy = (Math.random() - 0.5) * initialSpeed;
-      });
+  // Calculate safe max radius based on container and number of tokens
+  const padding = 6; // space between bubbles
+  const approxArea = width * height / tokens.length; // available area per bubble
+  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - padding;
 
-      // ----- CREATE NODES -----
-      const node = svg.selectAll("g").data(tokens).enter().append("g")
-        .attr("transform", d => `translate(${d.x},${d.y})`)
-        .style("cursor", "pointer");
+  const scale = d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius * 1.22)]); // 1.5× bigger
 
-      // Circle
-      const circles = node.append("circle")
-        .attr("r", d => d.r)
-        .attr("fill", "none")
-        .attr("stroke", d => getChange(d) >= 0 ? "#16ff00" : "#ff3d3d")
-        .attr("stroke-width", 3)
-        .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #16ff00)" : "drop-shadow(0 0 15px #ff3d3d)");
+  tokens.forEach(d => d.r = scale(Math.abs(Number(d["change" + period] || 0))));
+}
 
-      // Hover
-      node.on("mouseover", function (event, d) {
-        d3.select(this).select("circle")
-          .attr("stroke", "#fff")
-          .style("filter", "drop-shadow(0 0 30px #fff)");
-      })
-      .on("mouseout", function (event, d) {
-        d3.select(this).select("circle")
-          .attr("stroke", getChange(d) >= 0 ? "#16ff00" : "#ff3d3d")
-          .style("filter", getChange(d) >= 0 ? "drop-shadow(0 0 15px #16ff00)" : "drop-shadow(0 0 15px #ff3d3d)");
-      });
 
-      // Clip and logo
-      node.append("clipPath").attr("id", (d, i) => `clip-${i}`)
-        .append("circle").attr("r", d => d.r * 0.85).attr("cx", 0).attr("cy", 0);
+  computeRadius(currentPeriod);
 
-      node.append("image")
-        .attr("xlink:href", d => d.logo)
-        .attr("x", d => -d.r * 0.85)
-        .attr("y", d => -d.r * 0.85)
-        .attr("width", d => 2 * d.r * 0.85)
-        .attr("height", d => 2 * d.r * 0.85)
-        .attr("clip-path", (d, i) => `url(#clip-${i})`);
+  const padding = 10;
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
+  });
 
-      // ----- TEXT WITH BACKGROUND -----
-      function addTextWithBackground(g, textStr, dy) {
-        const text = g.append("text")
-          .attr("dy", dy)
-          .text(textStr)
-          .attr("text-anchor", "middle")
-          .attr("fill", "#fff")
-          .attr("font-weight", "700")
-          .style("pointer-events", "none")
-          .style("text-shadow", "2px 2px 4px #000");
+  const node = svg.selectAll("g").data(tokens).enter().append("g")
+    .attr("transform", d => `translate(${d.x},${d.y})`)
+    .style("cursor","pointer");
 
-        const bbox = text.node().getBBox();
-        g.insert("rect", "text")
-          .attr("x", bbox.x - 4)
-          .attr("y", bbox.y - 2)
-          .attr("width", bbox.width + 8)
-          .attr("height", bbox.height + 4)
-          .attr("rx", 3)
-          .attr("fill", "rgba(0,0,0,0.5)");
-      }
+  const circles = node.append("circle")
+    .attr("r", d=>d.r)
+    .attr("fill","none")
+    .attr("stroke",d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
+    .attr("stroke-width",3)
+    .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 
-      // Initial texts
-      node.each(function (d) {
-        addTextWithBackground(d3.select(this), d.ticker, -4);
-        addTextWithBackground(d3.select(this), (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
-      });
+  node.on("mouseover", function(event,d){
+    d3.select(this).select("circle")
+      .attr("stroke","#fff")
+      .style("filter","drop-shadow(0 0 30px #fff)");
+  }).on("mouseout", function(event,d){
+    d3.select(this).select("circle")
+      .attr("stroke",getChange(d)>=0?"#16ff00":"#ff3d3d")
+      .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+  });
 
-      // ----- POPUP WITH SOCIAL ICONS -----
-      let popupInterval;
-      function updatePopup(d) {
-        return async function () {
-          try {
-            const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
-            const p = (await res.json()).pairs?.[0];
-            if (!p?.baseToken?.symbol) return;
+  node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
+    .append("circle").attr("r",d=>d.r*0.85);
 
-            const price = Number(p.priceUsd);
-            const change = Number(p["priceChange"]?.[`h${currentPeriod}`] || 0);
-            d["change" + currentPeriod] = change;
-            const mcap = Math.round(price * d.supply);
-            const mcapFormatted = mcap.toLocaleString('en-US');
+  node.append("image")
+    .attr("xlink:href",d=>d.logo)
+    .attr("x",d=>-d.r*0.85)
+    .attr("y",d=>-d.r*0.85)
+    .attr("width",d=>2*d.r*0.85)
+    .attr("height",d=>2*d.r*0.85)
+    .attr("clip-path",(d,i)=>`url(#clip-${i})`);
 
-            const g = d3.selectAll("g").filter(dd => dd.pairId === d.pairId);
-            g.selectAll("text").remove();
-            g.selectAll("rect").remove();
-            addTextWithBackground(g, d.ticker, -4);
-            addTextWithBackground(g, (change > 0 ? "+" : "") + change.toFixed(1) + "%", 16);
+  function addTextWithBackground(g,textStr,dy){
+    const text=g.append("text").attr("dy",dy).text(textStr)
+      .attr("text-anchor","middle").attr("fill","#fff")
+      .attr("font-weight","700").style("pointer-events","none")
+      .style("text-shadow","2px 2px 4px #000");
+    const bbox=text.node().getBBox();
+    g.insert("rect","text")
+      .attr("x",bbox.x-4).attr("y",bbox.y-2)
+      .attr("width",bbox.width+8).attr("height",bbox.height+4)
+      .attr("rx",3).attr("fill","rgba(0,0,0,0.5)");
+  }
 
-            // update circle stroke + filter consistently using attr()
-            const color = change >= 0 ? "#16ff00" : "#ff3d3d";
-            g.select("circle")
-              .attr("stroke", color)
-              .style("filter", change >= 0 ? "drop-shadow(0 0 15px #16ff00)" : "drop-shadow(0 0 15px #ff3d3d)");
+  node.each(function(d){
+    addTextWithBackground(d3.select(this),d.ticker,-4);
+    addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
+  });
 
-            let socialsHTML = '';
-            if (d.xUrl) socialsHTML += `<a href="${d.xUrl}" target="_blank"><img src="https://i.postimg.cc/ncpwFVXC/XICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
-            if (d.webUrl) socialsHTML += `<a href="${d.webUrl}" target="_blank"><img src="https://i.postimg.cc/9Fbgr391/WICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
+  // Popup update with thousand separator using comma
+  let popupInterval;
+  function updatePopup(d){
+    return async function(){
+      try{
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+        const p = (await res.json()).pairs?.[0];
+        if(!p?.baseToken?.symbol) return;
+        const price = Number(p.priceUsd);
+        const change = Number(p["priceChange"]?.[`h${currentPeriod}`]||0);
+        d["change"+currentPeriod]=change;
+        const mcap = Math.round(price*d.supply);
+        const mcapFormatted = mcap.toLocaleString('en-US');
 
-            popup.innerHTML = `<span class="close">✕</span>
-              <b style="color:yellow">${p.baseToken.symbol}</b><br>
-              Price: $${price.toFixed(4)}<br>
-              MCAP: $${mcapFormatted}<br>
-              Change ${currentPeriod}h: <span style="color:${change >= 0 ? '#16ff00' : '#ff3d3d'}">${(change > 0 ? "+" : "") + change.toFixed(2)}%</span><br>
-              ${socialsHTML}
-              <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
-          } catch (e) { console.warn("Error updating popup", d.pairId); }
-        };
-      }
+        const g = d3.selectAll("g").filter(dd=>dd.pairId===d.pairId);
+        g.selectAll("text").remove(); g.selectAll("rect").remove();
+        addTextWithBackground(g,d.ticker,-4);
+        addTextWithBackground(g,(change>0?"+":"")+change.toFixed(1)+"%",16);
+        const color = change>=0?"#16ff00":"#ff3d3d";
+        g.select("circle").attr("stroke",color).style("filter",change>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 
-      node.on("click", (event, d) => {
-        if (popupInterval) clearInterval(popupInterval);
-        const updater = updatePopup(d);
-        updater();
-        popupInterval = setInterval(updater, 60000);
-        popup.style.top = "20px";
-        popup.style.opacity = "1";
+        let socialsHTML='';
+        if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img src="https://i.postimg.cc/ncpwFVXC/XICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
+        if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img src="https://i.postimg.cc/9Fbgr391/WICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
 
-        const closeBtn = popup.querySelector(".close");
-        if (closeBtn) closeBtn.onclick = () => {
-          popup.style.opacity = "0";
-          popup.style.top = "-200px";
-          clearInterval(popupInterval);
-        };
-        event.stopPropagation();
-      });
+        popup.innerHTML=`<span class="close">✕</span>
+          <b style="color:yellow">${p.baseToken.symbol}</b><br>
+          Price: $${price.toFixed(4)}<br>
+          MCAP: $${mcapFormatted}<br>
+          Change ${currentPeriod}h: <span style="color:${change>=0?'#16ff00':'#ff3d3d'}">${(change>0?"+":"")+change.toFixed(2)}%</span><br>
+          ${socialsHTML}
+          <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
+      }catch(e){console.warn("Error updating popup",d.pairId);}
+    };
+  }
 
-      document.addEventListener("click", () => {
-        popup.style.opacity = "0";
-        popup.style.top = "-200px";
-        if (popupInterval) clearInterval(popupInterval);
-      });
+  node.on("click",(event,d)=>{
+    if(popupInterval) clearInterval(popupInterval);
+    const updater=updatePopup(d);
+    updater();
+    popupInterval=setInterval(updater,60000);
+    popup.style.top="20px"; popup.style.opacity="1";
 
-      let mouse = { x: width / 2, y: height / 2 };
-      svg.on("mousemove", (event) => {
-        const [mx, my] = d3.pointer(event);
-        mouse.x = mx;
-        mouse.y = my;
-      });
+    const closeBtn = popup.querySelector(".close");
+    if(closeBtn) closeBtn.onclick=()=>{ popup.style.opacity="0"; popup.style.top="-200px"; clearInterval(popupInterval);}
+    event.stopPropagation();
+  });
 
-      // ----- BUBBLE ANIMATION & COLLISION -----
-      function animate() {
-        tokens.forEach(d => {
-          const dx = mouse.x - d.x;
-          const dy = mouse.y - d.y;
-          d.vx += dx * motionStrength;
-          d.vy += dy * motionStrength;
-        });
+  document.addEventListener("click",()=>{ popup.style.opacity="0"; popup.style.top="-200px"; if(popupInterval) clearInterval(popupInterval); });
 
-        tokens.forEach(d => {
-          d.x += d.vx;
-          d.y += d.vy;
-          d.vx *= 0.98;
-          d.vy *= 0.98;
-          if (d.x - d.r < 0) { d.x = d.r; d.vx *= -1; }
-          if (d.x + d.r > width) { d.x = width - d.r; d.vx *= -1; }
-          if (d.y - d.r < 0) { d.y = d.r; d.vy *= -1; }
-          if (d.y + d.r > height) { d.y = height - d.r; d.vy *= -1; }
-        });
+  let mouse={x:width/2,y:height/2};
+  svg.on("mousemove",(event)=>{
+    const [mx,my]=d3.pointer(event);
+    mouse.x=mx; mouse.y=my;
+  });
 
-        for (let i = 0; i < tokens.length; i++) {
-          for (let j = i + 1; j < tokens.length; j++) {
-            const a = tokens[i], b = tokens[j];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = a.r + b.r + collisionPadding;
-            if (dist < minDist) {
-              const overlap = (minDist - dist) / 2;
-              const nx = dx / dist, ny = dy / dist;
-              a.x -= nx * overlap; a.y -= ny * overlap;
-              b.x += nx * overlap; b.y += ny * overlap;
-              const dot = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-              if (dot > 0) {
-                const k = dot * 0.5;
-                a.vx -= k * nx; a.vy -= k * ny;
-                b.vx += k * nx; b.vy += k * ny;
-              }
-            }
+  // ----- ANIMATION & COLLISION -----
+  function animate(){
+    tokens.forEach(d=>{
+      const dx=mouse.x-d.x, dy=mouse.y-d.y;
+      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
+    });
+    tokens.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      d.vx*=0.98; d.vy*=0.98;
+      if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
+      if(d.x+d.r>width){d.x=width-d.r; d.vx*=-1;}
+      if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
+      if(d.y+d.r>height){d.y=height-d.r; d.vy*=-1;}
+    });
+    for(let i=0;i<tokens.length;i++){
+      for(let j=i+1;j<tokens.length;j++){
+        const a=tokens[i], b=tokens[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const minDist=a.r+b.r+collisionPadding;
+        if(dist<minDist){
+          const overlap=(minDist-dist)/2;
+          const nx=dx/dist, ny=dy/dist;
+          a.x-=nx*overlap; a.y-=ny*overlap;
+          b.x+=nx*overlap; b.y+=ny*overlap;
+          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+          if(dot>0){
+            const k=dot*0.5;
+            a.vx-=k*nx; a.vy-=k*ny;
+            b.vx+=k*nx; b.vy+=k*ny;
           }
         }
-
-        node.attr("transform", d => `translate(${d.x},${d.y})`);
-        requestAnimationFrame(animate);
       }
-      animate();
+    }
+    node.attr("transform",d=>`translate(${d.x},${d.y})`);
+    requestAnimationFrame(animate);
+  }
+  animate();
 
-      // ----- BUTTON EVENTS -----
-      document.querySelectorAll("#buttons button").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll("#buttons button").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentPeriod = btn.dataset.period;
-          computeRadius(currentPeriod);
-
-          circles.transition().duration(500)
-            .attr("r", d => d.r)
-            .attr("stroke", d => getChange(d) >= 0 ? "#16ff00" : "#ff3d3d")
-            .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #16ff00)" : "drop-shadow(0 0 15px #ff3d3d)");
-
-          svg.selectAll("clipPath circle").transition().duration(500)
-            .attr("r", d => d.r * 0.85);
-
-          node.select("image").transition().duration(500)
-            .attr("x", d => -d.r * 0.85)
-            .attr("y", d => -d.r * 0.85)
-            .attr("width", d => 2 * d.r * 0.85)
-            .attr("height", d => 2 * d.r * 0.85);
-
-          node.each(function (d) {
-            const g = d3.select(this);
-            g.selectAll("text").remove();
-            g.selectAll("rect").remove();
-            addTextWithBackground(g, d.ticker, -4);
-            addTextWithBackground(g, (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
-          });
-        });
+  // ----- BUTTONS -----
+  document.querySelectorAll("#buttons button").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      currentPeriod=btn.dataset.period;
+      computeRadius(currentPeriod);
+      circles.transition().duration(500).attr("r",d=>d.r).attr("stroke",d=>getChange(d)>=0?"#16ff00":"#ff3d3d").style("filter",d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+      svg.selectAll("clipPath circle").transition().duration(500).attr("r",d=>d.r*0.85);
+      node.select("image").transition().duration(500).attr("x",d=>-d.r*0.85).attr("y",d=>-d.r*0.85).attr("width",d=>2*d.r*0.85).attr("height",d=>2*d.r*0.85);
+      node.each(function(d){
+        const g=d3.select(this);
+        g.selectAll("text").remove(); g.selectAll("rect").remove();
+        addTextWithBackground(g,d.ticker,-4);
+        addTextWithBackground(g,(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
       });
-    })();
-  </script>
-
+    });
+  });
+})();
+</script>
 </body>
 </html>
-
-
-
-
-
-
