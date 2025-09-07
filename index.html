@@ -219,23 +219,27 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Safe maximum radius per token based on container area
-  const approxArea = (width * height) / tokens.length;
+  const approxArea = width * height / tokens.length;
   let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
-  // Mobile: reduce radius slightly to prevent overcrowding
-  if (width < 768) {
-    maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 8); // smaller than before
-  }
-
+  // Base scale
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
     .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
   tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+    let value = Math.abs(Number(d["change" + period] || 0));
+
+    // Mobile contrast boost
+    if (width < 768) {
+      const exponent = 1.5; // higher = more contrast
+      value = Math.pow(value, exponent);
+    }
+
+    d.r = scale(value);
   });
 }
+
 
 
 
@@ -482,5 +486,6 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
