@@ -137,8 +137,8 @@ text {
 
   const minRadius = 25;
   const maxRadius = 80;
-  const collisionPadding = 6;
-  const motionStrength = 0.00008;
+  const collisionPadding = 7;
+  const motionStrength = 0.00009;
   const initialSpeed = 0.15;
 
   // Tokens
@@ -375,22 +375,46 @@ text {
 
   // ----- BUTTONS -----
   document.querySelectorAll("#buttons button").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      currentPeriod=btn.dataset.period;
-      computeRadius(currentPeriod);
-      circles.transition().duration(500).attr("r",d=>d.r).attr("stroke",d=>getChange(d)>=0?"#16ff00":"#ff3d3d").style("filter",d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
-      svg.selectAll("clipPath circle").transition().duration(500).attr("r",d=>d.r*0.85);
-      node.select("image").transition().duration(500).attr("x",d=>-d.r*0.85).attr("y",d=>-d.r*0.85).attr("width",d=>2*d.r*0.85).attr("height",d=>2*d.r*0.85);
-      node.each(function(d){
-        const g=d3.select(this);
-        g.selectAll("text").remove(); g.selectAll("rect").remove();
-        addTextWithBackground(g,d.ticker,-4);
-        addTextWithBackground(g,(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
-      });
+  btn.addEventListener("click", async ()=>{
+    document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPeriod = btn.dataset.period;
+
+    // Fetch updated change values for all tokens
+    await Promise.all(tokens.map(async d=>{
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+        const p = (await res.json()).pairs?.[0];
+        if(p?.baseToken?.symbol){
+          d["change1"] = Number(p.priceChange?.h1 || 0);
+          d["change6"] = Number(p.priceChange?.h6 || 0);
+          d["change24"] = Number(p.priceChange?.h24 || 0);
+        }
+      } catch(e){ console.warn("Error fetching", d.pairId); }
+    }));
+
+    computeRadius(currentPeriod);
+
+    circles.transition().duration(500)
+      .attr("r", d=>d.r)
+      .attr("stroke", d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
+      .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+
+    svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+
+    node.select("image").transition().duration(500)
+      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+      .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
+
+    node.each(function(d){
+      const g = d3.select(this);
+      g.selectAll("text").remove(); g.selectAll("rect").remove();
+      addTextWithBackground(g, d.ticker, -4);
+      addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
     });
   });
+});
+
 })();
 </script>
 </body>
