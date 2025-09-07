@@ -232,7 +232,7 @@ text {
     let value = Math.abs(Number(d["change" + period] || 0));
 
     // Increase contrast slightly
-    const exponent = width < 768 ? 1.6 : 1.2; // mobile: higher contrast
+    const exponent = width < 768 ? 1.7 : 1.2; // mobile: higher contrast
     value = Math.pow(value, exponent);
 
     d.r = scale(value);
@@ -489,6 +489,7 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
 
