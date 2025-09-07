@@ -213,29 +213,32 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  // Valor absoluto máximo
+  // Valor absoluto máximo del cambio
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Radios base: tramos
-  const minR = minRadius; // ejemplo 25
-  const maxR = Math.sqrt((width*height)/tokens.length/Math.PI) - 4; // máximo seguro
+  // Calculamos máximo radio posible para llenar contenedor
+  const totalArea = width * height * 0.8; // dejar 20% margen
+  const maxPossibleR = Math.sqrt(totalArea / tokens.length / Math.PI);
+  const minR = minRadius;
+  const maxR = Math.min(maxRadius, maxPossibleR);
+
   const quarterR = (maxR - minR)/4;
 
   tokens.forEach(d => {
     const val = Math.abs(Number(d["change"+period]||0));
-    const ratio = val/maxVal; // entre 0 y 1
+    const ratio = val / maxVal;
 
-    // Asignamos 1 de 4 tramos
+    // Asignamos tramos de 1/4 a 4/4
     if (ratio <= 0.25) d.r = minR + quarterR*1;
     else if (ratio <= 0.5) d.r = minR + quarterR*2;
     else if (ratio <= 0.75) d.r = minR + quarterR*3;
     else d.r = minR + quarterR*4;
   });
 }
+
 
 
 
@@ -487,6 +490,7 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
 
