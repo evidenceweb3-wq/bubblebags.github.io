@@ -173,17 +173,25 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Calculate safe max radius based on container and number of tokens
-  const padding = 6; // space between bubbles
-  const approxArea = width * height / tokens.length; // available area per bubble
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - padding;
+  // scale factor based on container size (relative to a reference desktop size)
+  const containerSize = Math.min(width, height);
+  const scaleFactor = containerSize / 800; // 800 = reference desktop size
 
+  // scaling radius
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, Math.min(maxRadius, maxSafeRadius * 1.22)]); // 1.5× bigger
+    .range([minRadius, maxRadius]);
 
-  tokens.forEach(d => d.r = scale(Math.abs(Number(d["change" + period] || 0))));
+  // set minimum visible radius for very small bubbles
+  const minVisible = 40; // pixels, adjust if needed
+
+  tokens.forEach(d => {
+    // scale radius by scaleFactor, leave 20% space, and apply minimum visible
+    d.r = Math.max(scale(Math.abs(Number(d["change" + period] || 0))) * scaleFactor * 1.3, minVisible);
+  });
 }
+
+
 
 
   computeRadius(currentPeriod);
