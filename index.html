@@ -49,16 +49,22 @@ button {
 button.active { background: #ff8c00; color: #000; }
 
 #container {
-  width: 95vmin;   /* was 80vmin → wider, closer to screen edges */
-  height: 95vmin;  /* keep same ratio so box stays square */
-  background: #111;
-  border: 2px solid #ff8c00;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 25px #ff8c00;
-  user-select: none;
-}
+    width: 95vmin;   /* keep same */
+    height: 80vmin;  /* increased on desktop, more breathing room */
+    background: #111;
+    border: 2px solid #ff8c00;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 25px #ff8c00;
+    user-select: none;
+  }
+
+  @media (max-width: 768px) {
+    #container {
+      height: 55vmin;  /* shrink on mobile so bubbles don't overlap big header/buttons */
+    }
+  }
 
 
 svg { width: 100%; height: 100%; }
@@ -204,7 +210,6 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Approximate safe radius per token
   const approxArea = width * height / tokens.length;
   const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
@@ -213,14 +218,11 @@ text {
     .domain([0, maxVal])
     .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
+  // Mobile boost
+  const mobileBoost = width < 768 ? 1.2 : 1;  // slightly less aggressive to fit container
+
   tokens.forEach(d => {
-    if (width < 768) {
-      // Mobile: boost a bit, but keep within half container
-      d.r = Math.min(scale(Math.abs(Number(d["change" + period] || 0))) * 1.2, width / 2 - 5);
-    } else {
-      // Desktop: normal radius
-      d.r = scale(Math.abs(Number(d["change" + period] || 0)));
-    }
+    d.r = scale(Math.abs(Number(d["change" + period] || 0))) * mobileBoost;
   });
 }
 
@@ -229,15 +231,12 @@ function setInitialPositions() {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  const paddingAdjusted = width < 768 ? 5 : 10; // smaller padding on mobile to fit
+  const paddingAdjusted = width < 768 ? 12 : 10; // slightly less padding on mobile to fit bigger bubbles
 
   tokens.forEach((d, i) => {
     const angle = (i / tokens.length) * Math.PI * 2;
-    // place bubbles inside container
-    const radiusLimitX = Math.min(d.r, width / 2 - paddingAdjusted);
-    const radiusLimitY = Math.min(d.r, height / 2 - paddingAdjusted);
-    d.x = width / 2 + Math.cos(angle) * (width / 2 - radiusLimitX - paddingAdjusted);
-    d.y = height / 2 + Math.sin(angle) * (height / 2 - radiusLimitY - paddingAdjusted);
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
