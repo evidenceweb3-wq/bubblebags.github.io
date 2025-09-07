@@ -49,8 +49,8 @@ button {
 button.active { background: #ff8c00; color: #000; }
 
 #container {
-    width: 95vmin;   /* keep same */
-    height: 80vmin;  /* increased on desktop, more breathing room */
+    width: 95vmin;
+    height: 80vmin;
     background: #111;
     border: 2px solid #ff8c00;
     border-radius: 12px;
@@ -58,14 +58,7 @@ button.active { background: #ff8c00; color: #000; }
     overflow: hidden;
     box-shadow: 0 0 25px #ff8c00;
     user-select: none;
-  }
-
-  @media (max-width: 768px) {
-    #container {
-      height: 55vmin;  /* shrink on mobile so bubbles don't overlap big header/buttons */
-    }
-  }
-
+}
 
 svg { width: 100%; height: 100%; }
 
@@ -101,12 +94,28 @@ text {
 
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
-  header h1 { font-size: 30px; }
-  header h2 { font-size: 17px; }
-  #container { height: 65vmin; }
-  button { font-size: 16px; padding: 8px 14px; }
+  /* Header text doubled */
+  header h2 { font-size: 34px; }  /* Powered By */
+  header h1 { font-size: 60px; }  /* Before Satoshi */
+
+  /* Buttons doubled */
+  #buttons button {
+    font-size: 32px;
+    padding: 16px 28px;
+  }
+
+  /* Fund wallet doubled */
+  #fund { font-size: 24px; }
+  #fund span.label { font-size: 24px; }
+  #fund span.wallet { font-size: 24px; }
+
+  /* Container adjustment for mobile */
+  #container {
+    height: 65vmin;
+  }
 }
 </style>
+
 </head>
 
 <body>
