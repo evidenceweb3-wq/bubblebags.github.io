@@ -19,7 +19,7 @@ body {
 
 header { 
   text-align: center; 
-  margin: 13px 0 10px 0;  /* more breathing room */
+  margin: 16px 0 10px 0;  /* more breathing room */
 }
 header h2 { 
   font-size: 15px; 
@@ -34,29 +34,20 @@ header h1 {
 header h1 .before { color: #fff; }
 header h1 .satoshi { color: #ff8c00; }
 
-#buttons button {
-  margin: 0 6px;
-  padding: 10px 18px;   /* desktop padding */
+#buttons { 
+  margin: 10px 0 14px 0;  /* spacing above + below buttons */
+}
+button {
+  margin: 0 4px;
+  padding: 6px 12px;      /* slightly bigger for readability */
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #222;
   color: #fff;
   cursor: pointer;
-  font-size: 18px;      /* Reasonable desktop font */
+  font-size: 14px;
 }
-
-#buttons button.active { 
-  background: #ff8c00; 
-  color: #000; 
-}
-
-/* Mobile adjustment */
-@media (max-width: 768px) {
-  #buttons { margin: 24px 0 24px 0; }
-  #buttons button {
-    font-size: 16px;   /* slightly smaller on mobile */
-    padding: 12px 20px; 
-  }
+button.active { background: #ff8c00; color: #000; }
 
 #container {
     width: 95vmin;
@@ -129,7 +120,10 @@ text {
 
 <body>
 
-
+<header>
+  <h2>Powered By</h2>
+  <h1><span class="before">Before</span> <span class="satoshi">Satoshi</span></h1>
+</header>
 
 <div id="buttons">
   <button data-period="1">1h</button>
@@ -141,11 +135,11 @@ text {
   <svg id="svg"></svg>
   <div id="popup"></div>
 </div>
-  
-  <header>
-  <h2>Powered By</h2>
-  <h1><span class="before">Before</span> <span class="satoshi">Satoshi</span></h1>
-</header>
+
+<div id="fund">
+  <span class="label">FUND US:</span>
+  <span class="wallet">HFs2KJxfp6jraXc69v2ouuDNTVfTm8er78UYQqqWuQP5</span>
+</div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
@@ -488,5 +482,3 @@ setInitialPositions();
 </script>
 </body>
 </html>
-
-
