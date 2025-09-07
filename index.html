@@ -145,6 +145,8 @@ text {
 <script>
 (async function () {
   const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
   const svg = d3.select("#svg");
   const popup = document.getElementById("popup");
 
@@ -203,52 +205,93 @@ text {
     } catch (e) { console.warn("Error", pair.pairId); return null; }
   }
 
+  // ----- INITIAL FETCH -----
   let tokens = (await Promise.allSettled(tokensData.map(fetchPair)))
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
-  // ---- Compute radius with mobile boost ----
   function computeRadius(period) {
+  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
+
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // safe max radius based on container and number of tokens
-  const approxArea = (width * height * 0.7) / tokens.length; // leave margin
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+  // Safe maximum radius per token based on container area
+  const approxArea = (width * height) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
-  const mobileBoost = width < 768 ? 1.5 : 1; // boost on mobile
+  // Mobile: reduce radius slightly to prevent overcrowding
+  if (width < 768) {
+    maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 8); // smaller than before
+  }
 
   const scale = d3.scaleSqrt()
-      .domain([0, maxVal])
-      .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+    .domain([0, maxVal])
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
   tokens.forEach(d => {
-      d.r = scale(Math.abs(Number(d["change" + period] || 0))) * mobileBoost;
+    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
 }
 
-  // ---- Initial positions ----
-  function setInitialPositions() {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const padding = width < 768 ? 8 : 10;
 
-    tokens.forEach((d,i) => {
-      const angle = (i / tokens.length) * Math.PI * 2;
-      d.x = width/2 + Math.cos(angle) * (width/2 - d.r - padding);
-      d.y = height/2 + Math.sin(angle) * (height/2 - d.r - padding);
-      d.vx = (Math.random()-0.5) * initialSpeed;
-      d.vy = (Math.random()-0.5) * initialSpeed;
-    });
-  }
+
+function setInitialPositions() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  const paddingAdjusted = width < 768 ? 12 : 10; // slightly less padding on mobile to fit bigger bubbles
+
+  tokens.forEach((d, i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
+    d.vx = (Math.random() - 0.5) * initialSpeed;
+    d.vy = (Math.random() - 0.5) * initialSpeed;
+  });
+}
+
+
+
+// Initial positions
+function setInitialPositions() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  // Dynamic padding for mobile
+  const paddingAdjusted = width < 768 ? 16 : 10;
+
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - paddingAdjusted);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - paddingAdjusted);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
+  });
+}
+
+// --- Run ---
+computeRadius(currentPeriod);
+setInitialPositions();
+
+
 
   computeRadius(currentPeriod);
-  setInitialPositions();
 
-  // ---- Create nodes ----
+  const padding = 10;
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
+  });
+
   const node = svg.selectAll("g").data(tokens).enter().append("g")
     .attr("transform", d => `translate(${d.x},${d.y})`)
     .style("cursor","pointer");
@@ -298,7 +341,7 @@ text {
     addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
   });
 
-  // ---- Popup ----
+  // Popup update with thousand separator using comma
   let popupInterval;
   function updatePopup(d){
     return async function(){
@@ -348,104 +391,94 @@ text {
 
   document.addEventListener("click",()=>{ popup.style.opacity="0"; popup.style.top="-200px"; if(popupInterval) clearInterval(popupInterval); });
 
-  let mouse={x:container.clientWidth/2,y:container.clientHeight/2};
+  let mouse={x:width/2,y:height/2};
   svg.on("mousemove",(event)=>{
     const [mx,my]=d3.pointer(event);
     mouse.x=mx; mouse.y=my;
   });
 
-  // ---- Animation & collision ----
-  function animate() {
-  tokens.forEach(d => {
-    const dx = mouse.x - d.x, dy = mouse.y - d.y;
-    d.vx += dx * motionStrength; 
-    d.vy += dy * motionStrength;
-  });
-
-  tokens.forEach(d => {
-    d.x += d.vx; 
-    d.y += d.vy;
-    d.vx *= 0.95; // more damping
-    d.vy *= 0.95;
-    if(d.x - d.r < 0){ d.x = d.r; d.vx *= -0.7; }
-    if(d.x + d.r > container.clientWidth){ d.x = container.clientWidth - d.r; d.vx *= -0.7; }
-    if(d.y - d.r < 0){ d.y = d.r; d.vy *= -0.7; }
-    if(d.y + d.r > container.clientHeight){ d.y = container.clientHeight - d.r; d.vy *= -0.7; }
-  });
-
-  // collision
-  for(let i=0;i<tokens.length;i++){
-    for(let j=i+1;j<tokens.length;j++){
-      const a = tokens[i], b = tokens[j];
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const minDist = a.r + b.r + collisionPadding;
-      if(dist < minDist){
-        const overlap = (minDist - dist) / 2;
-        const nx = dx / dist, ny = dy / dist;
-        a.x -= nx * overlap; a.y -= ny * overlap;
-        b.x += nx * overlap; b.y += ny * overlap;
-
-        const k = 0.5;
-        a.vx -= k * nx; a.vy -= k * ny;
-        b.vx += k * nx; b.vy += k * ny;
+  // ----- ANIMATION & COLLISION -----
+  function animate(){
+    tokens.forEach(d=>{
+      const dx=mouse.x-d.x, dy=mouse.y-d.y;
+      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
+    });
+    tokens.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      d.vx*=0.98; d.vy*=0.98;
+      if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
+      if(d.x+d.r>width){d.x=width-d.r; d.vx*=-1;}
+      if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
+      if(d.y+d.r>height){d.y=height-d.r; d.vy*=-1;}
+    });
+    for(let i=0;i<tokens.length;i++){
+      for(let j=i+1;j<tokens.length;j++){
+        const a=tokens[i], b=tokens[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const minDist=a.r+b.r+collisionPadding;
+        if(dist<minDist){
+          const overlap=(minDist-dist)/2;
+          const nx=dx/dist, ny=dy/dist;
+          a.x-=nx*overlap; a.y-=ny*overlap;
+          b.x+=nx*overlap; b.y+=ny*overlap;
+          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+          if(dot>0){
+            const k=dot*0.5;
+            a.vx-=k*nx; a.vy-=k*ny;
+            b.vx+=k*nx; b.vy+=k*ny;
+          }
+        }
       }
     }
-  }
-
-  node.attr("transform", d => `translate(${d.x},${d.y})`);
-  requestAnimationFrame(animate);
-}
-
+    node.attr("transform",d=>`translate(${d.x},${d.y})`);
+    requestAnimationFrame(animate);
   }
   animate();
 
-  // ---- Buttons ----
+  // ----- BUTTONS -----
   document.querySelectorAll("#buttons button").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      currentPeriod = btn.dataset.period;
+  btn.addEventListener("click", async ()=>{
+    document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPeriod = btn.dataset.period;
 
-      await Promise.all(tokens.map(async d=>{
-        try {
-          const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
-          const p = (await res.json()).pairs?.[0];
-          if(p?.baseToken?.symbol){
-            d["change1"] = Number(p.priceChange?.h1 || 0);
-            d["change6"] = Number(p.priceChange?.h6 || 0);
-            d["change24"] = Number(p.priceChange?.h24 || 0);
-          }
-        } catch(e){ console.warn("Error fetching", d.pairId); }
-      }));
+    // Fetch updated change values for all tokens
+    await Promise.all(tokens.map(async d=>{
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+        const p = (await res.json()).pairs?.[0];
+        if(p?.baseToken?.symbol){
+          d["change1"] = Number(p.priceChange?.h1 || 0);
+          d["change6"] = Number(p.priceChange?.h6 || 0);
+          d["change24"] = Number(p.priceChange?.h24 || 0);
+        }
+      } catch(e){ console.warn("Error fetching", d.pairId); }
+    }));
 
-      computeRadius(currentPeriod);
+    computeRadius(currentPeriod);
 
-      circles.transition().duration(500)
-        .attr("r", d=>d.r)
-        .attr("stroke", d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
-        .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+    circles.transition().duration(500)
+      .attr("r", d=>d.r)
+      .attr("stroke", d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
+      .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 
-      svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+    svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
 
-      node.select("image").transition().duration(500)
-        .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
-        .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
+    node.select("image").transition().duration(500)
+      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+      .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
 
-      node.each(function(d){
-        const g = d3.select(this);
-        g.selectAll("text").remove(); g.selectAll("rect").remove();
-        addTextWithBackground(g, d.ticker, -4);
-        addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
-      });
+    node.each(function(d){
+      const g = d3.select(this);
+      g.selectAll("text").remove(); g.selectAll("rect").remove();
+      addTextWithBackground(g, d.ticker, -4);
+      addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
     });
   });
+});
 
 })();
 </script>
-
 </body>
 </html>
-
-
-
