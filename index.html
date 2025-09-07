@@ -95,15 +95,18 @@ text {
 
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
-  header h2 { font-size: 18px; }   /* Powered By */
-  header h1 { font-size: 32px; }   /* Before Satoshi */
+  body {
+    justify-content: center; /* center everything vertically */
+  }
+
+  header h2 { font-size: 18px; }
+  header h1 { font-size: 32px; }
 
   #buttons button {
     font-size: 16px;
     padding: 8px 14px;
   }
 
-  /* Slightly smaller fund text */
   #fund { font-size: 14px; }
   #fund span.label { font-size: 14px; }
   #fund span.wallet { font-size: 14px; }
@@ -112,10 +115,8 @@ text {
     height: 65vmin;
   }
 }
-
-
+  
 </style>
-
 </head>
 
 <body>
@@ -479,3 +480,4 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
