@@ -222,24 +222,18 @@ text {
   const approxArea = (width * height) / tokens.length;
   const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
-  // Escala base lineal para limitar tamaño máximo
-  const baseScale = d3.scaleSqrt()
+  // Escala base: suavemente exponencial para más contraste real
+  const scale = d3.scalePow()
+    .exponent(1.5) // más contraste, pero no exagerado
     .domain([0, maxVal])
     .range([minRadius, maxSafeRadius]);
 
   tokens.forEach(d => {
-    let value = Math.abs(Number(d["change" + period] || 0));
-
-    // Aplica contraste exponencial: más diferencia entre grandes y pequeños
-    const exponent = 1.8;  // puedes subir más para más contraste
-    value = Math.pow(value, exponent);
-
-    d.r = baseScale(value);
-
-    // Limita al radio seguro
-    if (d.r > maxSafeRadius) d.r = maxSafeRadius;
+    const value = Math.abs(Number(d["change" + period] || 0));
+    d.r = scale(value);
   });
 }
+
 
 
 
@@ -489,6 +483,7 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
 
