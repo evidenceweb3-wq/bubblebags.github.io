@@ -210,21 +210,23 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const approxArea = width * height / tokens.length;
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
+  // Safe maximum radius per token based on container area
+  const approxArea = (width * height) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4; // some padding
+
+  // Mobile: allow slightly bigger but still safe
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.5, width / 5);
 
   // Base scale
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
     .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
-  // Mobile boost
-  const mobileBoost = width < 768 ? 1.2 : 1;  // slightly less aggressive to fit container
-
   tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0))) * mobileBoost;
+    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
 }
+
 
 function setInitialPositions() {
   const container = document.getElementById("container");
