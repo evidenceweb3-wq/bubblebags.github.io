@@ -98,6 +98,18 @@ text {
 #fund span.label { color: orange; font-weight: 700; margin-right: 4px; }
 #popup img { vertical-align: middle; }
 
+/* --- NEW: Social icons --- */
+#popup .social-icon {
+  width: 24px;   /* bigger size */
+  height: 24px;
+  margin-right: 6px;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+#popup .social-icon:hover {
+  transform: scale(1.2); /* hover effect */
+}
+
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
   body {
@@ -142,6 +154,7 @@ text {
   #fund span.label, #fund span.wallet { font-size: 14px; }
 }
 </style>
+
 
 </head>
 
@@ -387,8 +400,9 @@ setInitialPositions();
         g.select("circle").attr("stroke",color).style("filter",change>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
 
         let socialsHTML='';
-        if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img src="https://i.postimg.cc/ncpwFVXC/XICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
-        if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img src="https://i.postimg.cc/9Fbgr391/WICON2.png" style="width:16px;height:16px;margin-right:4px;"></a>`;
+        if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/ncpwFVXC/XICON2.png"></a>`;
+if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/9Fbgr391/WICON2.png"></a>`;
+
 
         popup.innerHTML=`<span class="close">✕</span>
           <b style="color:yellow">${p.baseToken.symbol}</b><br>
@@ -506,6 +520,3 @@ setInitialPositions();
 </script>
 </body>
 </html>
-
-
-
