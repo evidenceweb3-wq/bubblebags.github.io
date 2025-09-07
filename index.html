@@ -95,26 +95,24 @@ text {
 
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
-  /* Header scaling more reasonable */
-  header h2 { font-size: 18px; }  /* Powered By */
-  header h1 { font-size: 32px; }  /* Before Satoshi */
+  header h2 { font-size: 18px; }   /* Powered By */
+  header h1 { font-size: 32px; }   /* Before Satoshi */
 
-  /* Buttons slightly bigger, not 2x */
   #buttons button {
-    font-size: 18px;
-    padding: 10px 16px;
+    font-size: 16px;
+    padding: 8px 14px;
   }
 
-  /* Fund wallet slightly bigger */
-  #fund { font-size: 16px; }
-  #fund span.label { font-size: 16px; }
-  #fund span.wallet { font-size: 16px; }
+  /* Slightly smaller fund text */
+  #fund { font-size: 14px; }
+  #fund span.label { font-size: 14px; }
+  #fund span.wallet { font-size: 14px; }
 
-  /* Container adjustment for mobile */
   #container {
     height: 65vmin;
   }
 }
+
 
 </style>
 
@@ -223,12 +221,13 @@ text {
 
   // Safe maximum radius per token based on container area
   const approxArea = (width * height) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4; // some padding
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
-  // Mobile: allow slightly bigger but still safe
-  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.5, width / 5);
+  // Mobile: reduce radius slightly to prevent overcrowding
+  if (width < 768) {
+    maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 8); // smaller than before
+  }
 
-  // Base scale
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
     .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
@@ -237,6 +236,7 @@ text {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
 }
+
 
 
 function setInitialPositions() {
@@ -482,4 +482,5 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
