@@ -204,18 +204,45 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const padding = 12; // extra space to avoid collisions
+  // Dynamically compute safe radius
   const approxArea = width * height / tokens.length;
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - padding;
+  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
 
+  // Base scale
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, Math.min(maxRadius, maxSafeRadius * 1.35)]); // slightly larger if safe
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+
+  // Mobile boost
+  const mobileBoost = width < 768 ? 1.2 : 1;
 
   tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0))) * 1.1; // ~10% boost
+    d.r = scale(Math.abs(Number(d["change" + period] || 0))) * mobileBoost;
   });
 }
+
+// Initial positions
+function setInitialPositions() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  // Dynamic padding for mobile
+  const paddingAdjusted = width < 768 ? 16 : 10;
+
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - paddingAdjusted);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - paddingAdjusted);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
+  });
+}
+
+// --- Run ---
+computeRadius(currentPeriod);
+setInitialPositions();
+
 
 
   computeRadius(currentPeriod);
