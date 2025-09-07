@@ -211,23 +211,24 @@ text {
 
   // ---- Compute radius with mobile boost ----
   function computeRadius(period) {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-    const approxArea = width * height / tokens.length;
-    const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 2;
+  // safe max radius based on container and number of tokens
+  const approxArea = (width * height * 0.7) / tokens.length; // leave margin
+  const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-    const mobileBoost = width < 768 ? 1.6 : 1; // bigger bubbles on mobile
+  const mobileBoost = width < 768 ? 1.5 : 1; // boost on mobile
 
-    const scale = d3.scaleSqrt()
+  const scale = d3.scaleSqrt()
       .domain([0, maxVal])
       .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
-    tokens.forEach(d => {
+  tokens.forEach(d => {
       d.r = scale(Math.abs(Number(d["change" + period] || 0))) * mobileBoost;
-    });
-  }
+  });
+}
 
   // ---- Initial positions ----
   function setInitialPositions() {
@@ -354,41 +355,48 @@ text {
   });
 
   // ---- Animation & collision ----
-  function animate(){
-    tokens.forEach(d=>{
-      const dx=mouse.x-d.x, dy=mouse.y-d.y;
-      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
-    });
-    tokens.forEach(d=>{
-      d.x+=d.vx; d.y+=d.vy;
-      d.vx*=0.98; d.vy*=0.98;
-      if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
-      if(d.x+d.r>container.clientWidth){d.x=container.clientWidth-d.r; d.vx*=-1;}
-      if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
-      if(d.y+d.r>container.clientHeight){d.y=container.clientHeight-d.r; d.vy*=-1;}
-    });
-    for(let i=0;i<tokens.length;i++){
-      for(let j=i+1;j<tokens.length;j++){
-        const a=tokens[i], b=tokens[j];
-        const dx=b.x-a.x, dy=b.y-a.y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        const minDist=a.r+b.r+collisionPadding;
-        if(dist<minDist){
-          const overlap=(minDist-dist)/2;
-          const nx=dx/dist, ny=dy/dist;
-          a.x-=nx*overlap; a.y-=ny*overlap;
-          b.x+=nx*overlap; b.y+=ny*overlap;
-          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
-          if(dot>0){
-            const k=dot*0.5;
-            a.vx-=k*nx; a.vy-=k*ny;
-            b.vx+=k*nx; b.vy+=k*ny;
-          }
-        }
+  function animate() {
+  tokens.forEach(d => {
+    const dx = mouse.x - d.x, dy = mouse.y - d.y;
+    d.vx += dx * motionStrength; 
+    d.vy += dy * motionStrength;
+  });
+
+  tokens.forEach(d => {
+    d.x += d.vx; 
+    d.y += d.vy;
+    d.vx *= 0.95; // more damping
+    d.vy *= 0.95;
+    if(d.x - d.r < 0){ d.x = d.r; d.vx *= -0.7; }
+    if(d.x + d.r > container.clientWidth){ d.x = container.clientWidth - d.r; d.vx *= -0.7; }
+    if(d.y - d.r < 0){ d.y = d.r; d.vy *= -0.7; }
+    if(d.y + d.r > container.clientHeight){ d.y = container.clientHeight - d.r; d.vy *= -0.7; }
+  });
+
+  // collision
+  for(let i=0;i<tokens.length;i++){
+    for(let j=i+1;j<tokens.length;j++){
+      const a = tokens[i], b = tokens[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const minDist = a.r + b.r + collisionPadding;
+      if(dist < minDist){
+        const overlap = (minDist - dist) / 2;
+        const nx = dx / dist, ny = dy / dist;
+        a.x -= nx * overlap; a.y -= ny * overlap;
+        b.x += nx * overlap; b.y += ny * overlap;
+
+        const k = 0.5;
+        a.vx -= k * nx; a.vy -= k * ny;
+        b.vx += k * nx; b.vy += k * ny;
       }
     }
-    node.attr("transform",d=>`translate(${d.x},${d.y})`);
-    requestAnimationFrame(animate);
+  }
+
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+  requestAnimationFrame(animate);
+}
+
   }
   animate();
 
@@ -438,5 +446,6 @@ text {
 
 </body>
 </html>
+
 
 
