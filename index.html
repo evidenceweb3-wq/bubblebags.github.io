@@ -95,26 +95,27 @@ text {
 
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
-  /* Header text doubled */
-  header h2 { font-size: 34px; }  /* Powered By */
-  header h1 { font-size: 60px; }  /* Before Satoshi */
+  /* Header scaling more reasonable */
+  header h2 { font-size: 18px; }  /* Powered By */
+  header h1 { font-size: 32px; }  /* Before Satoshi */
 
-  /* Buttons doubled */
+  /* Buttons slightly bigger, not 2x */
   #buttons button {
-    font-size: 32px;
-    padding: 16px 28px;
+    font-size: 18px;
+    padding: 10px 16px;
   }
 
-  /* Fund wallet doubled */
-  #fund { font-size: 24px; }
-  #fund span.label { font-size: 24px; }
-  #fund span.wallet { font-size: 24px; }
+  /* Fund wallet slightly bigger */
+  #fund { font-size: 16px; }
+  #fund span.label { font-size: 16px; }
+  #fund span.wallet { font-size: 16px; }
 
   /* Container adjustment for mobile */
   #container {
     height: 65vmin;
   }
 }
+
 </style>
 
 </head>
@@ -481,3 +482,4 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
