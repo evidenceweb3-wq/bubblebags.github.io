@@ -34,20 +34,28 @@ header h1 {
 header h1 .before { color: #fff; }
 header h1 .satoshi { color: #ff8c00; }
 
-#buttons { 
-  margin: 10px 0 14px 0;  /* spacing above + below buttons */
-}
-button {
-  margin: 0 4px;
-  padding: 6px 12px;      /* slightly bigger for readability */
+#buttons button {
+  margin: 0 6px;
+  padding: 10px 18px;   /* bigger buttons for both desktop + mobile */
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #222;
   color: #fff;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 56px;      /* bigger font */
 }
-button.active { background: #ff8c00; color: #000; }
+#buttons button.active { 
+  background: #ff8c00; 
+  color: #000; 
+}
+
+/* Mobile adjustment */
+@media (max-width: 768px) {
+  #buttons { margin: 24px 0 24px 0; }
+  #buttons button {
+    font-size: 18px;
+    padding: 12px 20px; 
+}
 
 #container {
     width: 95vmin;
@@ -479,3 +487,4 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
