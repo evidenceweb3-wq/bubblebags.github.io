@@ -103,15 +103,21 @@ text {
   body {
     justify-content: center; /* vertically center all content */
     overflow: hidden;        /* no scroll */
-    padding: 0 8px;          /* optional horizontal padding */
+    padding: 0 8px;
   }
 
   header {
-    margin: 0 0 10px 0;
+    margin: 20px 0 10px 0; /* move header lower on mobile */
   }
 
-  header h2 { font-size: 18px; margin: 2px 0; }
-  header h1 { font-size: 32px; margin: 0; }
+  header h2 { 
+    font-size: 14px; /* slightly smaller "Powered By" */
+    margin: 2px 0; 
+  }
+  header h1 { 
+    font-size: 28px; /* slightly smaller "Before Satoshi" */
+    margin: 0; 
+  }
 
   #buttons {
     margin: 8px 0 12px 0;
@@ -123,12 +129,12 @@ text {
   #buttons button {
     font-size: 16px;
     padding: 8px 14px;
-    margin: 4px; /* space between buttons */
+    margin: 4px; 
   }
 
   #container {
     height: 65vmin;
-    max-height: 80vh; /* never exceed screen height */
+    max-height: 80vh;
     width: 95vmin;
   }
 
@@ -500,5 +506,6 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
