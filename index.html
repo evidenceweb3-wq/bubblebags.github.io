@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BeforeSatoshi Live Bubble Map Organic</title>
 <style>
-body {
+html, body {
   margin: 0;
-  height: 100vh;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* prevent scroll */
+}
+
+body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-start; /* desktop: normal flow */
   background: #0a0a0f;
   font-family: sans-serif;
   color: #fff;
@@ -19,7 +24,7 @@ body {
 
 header { 
   text-align: center; 
-  margin: 13px 0 10px 0;  /* more breathing room */
+  margin: 13px 0 10px 0;
 }
 header h2 { 
   font-size: 15px; 
@@ -35,11 +40,11 @@ header h1 .before { color: #fff; }
 header h1 .satoshi { color: #ff8c00; }
 
 #buttons { 
-  margin: 10px 0 14px 0;  /* spacing above + below buttons */
+  margin: 10px 0 14px 0;
 }
 button {
   margin: 0 4px;
-  padding: 6px 12px;      /* slightly bigger for readability */
+  padding: 6px 12px;
   border: none;
   border-radius: 4px;
   background: #222;
@@ -50,15 +55,15 @@ button {
 button.active { background: #ff8c00; color: #000; }
 
 #container {
-    width: 95vmin;
-    height: 80vmin;
-    background: #111;
-    border: 2px solid #ff8c00;
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 0 25px #ff8c00;
-    user-select: none;
+  width: 95vmin;
+  height: 80vmin;
+  background: #111;
+  border: 2px solid #ff8c00;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px #ff8c00;
+  user-select: none;
 }
 
 svg { width: 100%; height: 100%; }
@@ -96,27 +101,42 @@ text {
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
   body {
-    justify-content: center; /* center everything vertically */
+    justify-content: center; /* vertically center all content */
+    overflow: hidden;        /* no scroll */
+    padding: 0 8px;          /* optional horizontal padding */
   }
 
-  header h2 { font-size: 18px; }
-  header h1 { font-size: 32px; }
+  header {
+    margin: 0 0 10px 0;
+  }
+
+  header h2 { font-size: 18px; margin: 2px 0; }
+  header h1 { font-size: 32px; margin: 0; }
+
+  #buttons {
+    margin: 8px 0 12px 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 
   #buttons button {
     font-size: 16px;
     padding: 8px 14px;
+    margin: 4px; /* space between buttons */
   }
-
-  #fund { font-size: 14px; }
-  #fund span.label { font-size: 14px; }
-  #fund span.wallet { font-size: 14px; }
 
   #container {
     height: 65vmin;
+    max-height: 80vh; /* never exceed screen height */
+    width: 95vmin;
   }
+
+  #fund { font-size: 14px; }
+  #fund span.label, #fund span.wallet { font-size: 14px; }
 }
-  
 </style>
+
 </head>
 
 <body>
@@ -480,4 +500,5 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
