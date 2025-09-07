@@ -217,22 +217,26 @@ text {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
+  // Valor absoluto máximo
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const approxArea = (width * height) / tokens.length;
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
-
-  // Escala base: suavemente exponencial para más contraste real
-  const scale = d3.scalePow()
-    .exponent(1.5) // más contraste, pero no exagerado
-    .domain([0, maxVal])
-    .range([minRadius, maxSafeRadius]);
+  // Radios base: tramos
+  const minR = minRadius; // ejemplo 25
+  const maxR = Math.sqrt((width*height)/tokens.length/Math.PI) - 4; // máximo seguro
+  const quarterR = (maxR - minR)/4;
 
   tokens.forEach(d => {
-    const value = Math.abs(Number(d["change" + period] || 0));
-    d.r = scale(value);
+    const val = Math.abs(Number(d["change"+period]||0));
+    const ratio = val/maxVal; // entre 0 y 1
+
+    // Asignamos 1 de 4 tramos
+    if (ratio <= 0.25) d.r = minR + quarterR*1;
+    else if (ratio <= 0.5) d.r = minR + quarterR*2;
+    else if (ratio <= 0.75) d.r = minR + quarterR*3;
+    else d.r = minR + quarterR*4;
   });
 }
+
 
 
 
@@ -483,6 +487,7 @@ setInitialPositions();
 </script>
 </body>
 </html>
+
 
 
 
