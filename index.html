@@ -339,21 +339,21 @@ setInitialPositions();
     .style("cursor","pointer");
 
   const circles = node.append("circle")
-    .attr("r", d=>d.r)
-    .attr("fill","none")
-    .attr("stroke",d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
-    .attr("stroke-width",3)
-    .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+  .attr("r", d=>d.r)
+  .attr("fill","none")
+  .attr("stroke",d=>getChange(d)>=0?"#01fe41":"#fe0289")
+  .attr("stroke-width",3)
+  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
-  node.on("mouseover", function(event,d){
-    d3.select(this).select("circle")
-      .attr("stroke","#fff")
-      .style("filter","drop-shadow(0 0 30px #fff)");
-  }).on("mouseout", function(event,d){
-    d3.select(this).select("circle")
-      .attr("stroke",getChange(d)>=0?"#16ff00":"#ff3d3d")
-      .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
-  });
+node.on("mouseover", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke","#fff")
+    .style("filter","drop-shadow(0 0 30px #fff)");
+}).on("mouseout", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
+    .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+});
 
   node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
     .append("circle").attr("r",d=>d.r*0.85);
@@ -401,8 +401,14 @@ setInitialPositions();
         g.selectAll("text").remove(); g.selectAll("rect").remove();
         addTextWithBackground(g,d.ticker,-4);
         addTextWithBackground(g,(change>0?"+":"")+change.toFixed(1)+"%",16);
-        const color = change>=0?"#16ff00":"#ff3d3d";
-        g.select("circle").attr("stroke",color).style("filter",change>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+        const color = change>=0 ? "#01fe41" : "#fe0289";
+g.select("circle")
+  .attr("stroke", color)
+  .style("filter", change>=0
+    ? "drop-shadow(0 0 15px #01fe41)"
+    : "drop-shadow(0 0 15px #fe0289)"
+  );
+
 
         let socialsHTML='';
         if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/ncpwFVXC/XICON2.png"></a>`;
@@ -413,7 +419,10 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
           <b style="color:yellow">${p.baseToken.symbol}</b><br>
           Price: $${price.toFixed(4)}<br>
           MCAP: $${mcapFormatted}<br>
-          Change ${currentPeriod}h: <span style="color:${change>=0?'#16ff00':'#ff3d3d'}">${(change>0?"+":"")+change.toFixed(2)}%</span><br>
+          Change ${currentPeriod}h: <span style="color:${change>=0?'#01fe41':'#fe0289'}">
+  ${(change>0?"+":"")+change.toFixed(2)}%
+</span>
+<br>
           ${socialsHTML}
           <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
       }catch(e){console.warn("Error updating popup",d.pairId);}
@@ -502,9 +511,10 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
     computeRadius(currentPeriod);
 
     circles.transition().duration(500)
-      .attr("r", d=>d.r)
-      .attr("stroke", d=>getChange(d)>=0?"#16ff00":"#ff3d3d")
-      .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #16ff00)":"drop-shadow(0 0 15px #ff3d3d)");
+  .attr("r", d=>d.r)
+  .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
+  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+
 
     svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
 
@@ -525,5 +535,3 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
-
-
