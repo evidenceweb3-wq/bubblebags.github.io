@@ -256,107 +256,71 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+    const fillFactor = 0.9;
+    const approxArea = (width * height * fillFactor) / tokens.length;
+    let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  const fillFactor = 0.9; // <-- fill 90% of container
-  const approxArea = (width * height * fillFactor) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+    if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
-  // Mobile adjustment
-  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
+    const scale = d3.scaleSqrt()
+      .domain([0, maxVal])
+      .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
-  const scale = d3.scaleSqrt()
-    .domain([0, maxVal])
-    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+    tokens.forEach(d => {
+      d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+    });
+  }
 
-  tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
-  });
-}
+  // ----- FORCE SIMULATION TO AVOID OVERLAPS -----
+  function runSimulation() {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
+    const simulation = d3.forceSimulation(tokens)
+      .force("x", d3.forceX(width / 2).strength(0.05))
+      .force("y", d3.forceY(height / 2).strength(0.05))
+      .force("collide", d3.forceCollide(d => d.r + collisionPadding))
+      .stop();
 
-  function getRadiusScale() {
-  const container = document.getElementById("container");
-  const width = container.clientWidth;
+    for (let i = 0; i < 200; i++) simulation.tick();
 
-  const minRadius = width < 768 ? 12 : 20;  
-  const maxRadius = width < 768 ? 60 : 140;  
+    tokens.forEach(d => {
+      d.x = Math.max(d.r, Math.min(width - d.r, d.x));
+      d.y = Math.max(d.r, Math.min(height - d.r, d.y));
+      d.vx = (Math.random() - 0.5) * initialSpeed;
+      d.vy = (Math.random() - 0.5) * initialSpeed;
+    });
+  }
 
-  const maxVal = d3.max(tokens, d => d.value || 1);
-
-  return d3.scaleSqrt()
-    .domain([0, maxVal])
-    .range([minRadius, maxRadius]);
-}
-
-function setInitialPositions() {
-  const container = document.getElementById("container");
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  const paddingAdjusted = width < 768 ? 12 : 5;
-  const scale = getRadiusScale();
-
-  tokens.forEach((d, i) => {
-    d.r = scale(d.value || 1);
-
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
-    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
-    d.vx = (Math.random() - 0.5) * initialSpeed;
-    d.vy = (Math.random() - 0.5) * initialSpeed;
-  });
-}
-
-// 👇 Run once at page load
-setInitialPositions();
-
-// 👇 Run again on resize
-window.addEventListener("resize", () => {
-  setInitialPositions();
-});
-
-
-// --- Run ---
-computeRadius(currentPeriod);
-setInitialPositions();
-
-
-
+  // ----- INITIAL SETUP -----
   computeRadius(currentPeriod);
+  runSimulation();
 
-  const padding = 10;
-  tokens.forEach((d,i) => {
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
-    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
-    d.vx = (Math.random()-0.5)*initialSpeed;
-    d.vy = (Math.random()-0.5)*initialSpeed;
-  });
-
+  // ----- NODE CREATION -----
   const node = svg.selectAll("g").data(tokens).enter().append("g")
     .attr("transform", d => `translate(${d.x},${d.y})`)
     .style("cursor","pointer");
 
   const circles = node.append("circle")
-  .attr("r", d=>d.r)
-  .attr("fill","none")
-  .attr("stroke",d=>getChange(d)>=0?"#01fe41":"#fe0289")
-  .attr("stroke-width",3)
-  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+    .attr("r", d => d.r)
+    .attr("fill", "none")
+    .attr("stroke", d => getChange(d) >= 0 ? "#01fe41" : "#fe0289")
+    .attr("stroke-width", 3)
+    .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
 
-node.on("mouseover", function(event,d){
-  d3.select(this).select("circle")
-    .attr("stroke","#fff")
-    .style("filter","drop-shadow(0 0 30px #fff)");
-}).on("mouseout", function(event,d){
-  d3.select(this).select("circle")
-    .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
-    .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
-});
+  node.on("mouseover", function(event,d){
+    d3.select(this).select("circle")
+      .attr("stroke","#fff")
+      .style("filter","drop-shadow(0 0 30px #fff)");
+  }).on("mouseout", function(event,d){
+    d3.select(this).select("circle")
+      .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
+      .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+  });
 
   node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
     .append("circle").attr("r",d=>d.r*0.85);
@@ -386,7 +350,7 @@ node.on("mouseover", function(event,d){
     addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
   });
 
-  // Popup update with thousand separator using comma
+  // ----- POPUP -----
   let popupInterval;
   function updatePopup(d){
     return async function(){
@@ -405,18 +369,16 @@ node.on("mouseover", function(event,d){
         addTextWithBackground(g,d.ticker,-4);
         addTextWithBackground(g,(change>0?"+":"")+change.toFixed(1)+"%",16);
         const color = change>=0 ? "#01fe41" : "#fe0289";
-g.select("circle")
-  .attr("stroke", color)
-  .style("filter", change>=0
-    ? "drop-shadow(0 0 15px #01fe41)"
-    : "drop-shadow(0 0 15px #fe0289)"
-  );
-
+        g.select("circle")
+          .attr("stroke", color)
+          .style("filter", change>=0
+            ? "drop-shadow(0 0 15px #01fe41)"
+            : "drop-shadow(0 0 15px #fe0289)"
+          );
 
         let socialsHTML='';
         if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/ncpwFVXC/XICON2.png"></a>`;
-if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/9Fbgr391/WICON2.png"></a>`;
-
+        if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/9Fbgr391/WICON2.png"></a>`;
 
         popup.innerHTML=`<span class="close">✕</span>
           <b style="color:yellow">${p.baseToken.symbol}</b><br>
@@ -493,48 +455,54 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 
   // ----- BUTTONS -----
   document.querySelectorAll("#buttons button").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
-    document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentPeriod = btn.dataset.period;
+    btn.addEventListener("click", async ()=>{
+      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      currentPeriod = btn.dataset.period;
 
-    // Fetch updated change values for all tokens
-    await Promise.all(tokens.map(async d=>{
-      try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
-        const p = (await res.json()).pairs?.[0];
-        if(p?.baseToken?.symbol){
-          d["change1"] = Number(p.priceChange?.h1 || 0);
-          d["change6"] = Number(p.priceChange?.h6 || 0);
-          d["change24"] = Number(p.priceChange?.h24 || 0);
-        }
-      } catch(e){ console.warn("Error fetching", d.pairId); }
-    }));
+      await Promise.all(tokens.map(async d=>{
+        try {
+          const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+          const p = (await res.json()).pairs?.[0];
+          if(p?.baseToken?.symbol){
+            d["change1"] = Number(p.priceChange?.h1 || 0);
+            d["change6"] = Number(p.priceChange?.h6 || 0);
+            d["change24"] = Number(p.priceChange?.h24 || 0);
+          }
+        } catch(e){ console.warn("Error fetching", d.pairId); }
+      }));
 
-    computeRadius(currentPeriod);
+      computeRadius(currentPeriod);
+      runSimulation();
 
-    circles.transition().duration(500)
-  .attr("r", d=>d.r)
-  .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
-  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+      circles.transition().duration(500)
+        .attr("r", d=>d.r)
+        .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
+        .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
+      svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
 
-    svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+      node.select("image").transition().duration(500)
+        .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+        .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
 
-    node.select("image").transition().duration(500)
-      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
-      .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
-
-    node.each(function(d){
-      const g = d3.select(this);
-      g.selectAll("text").remove(); g.selectAll("rect").remove();
-      addTextWithBackground(g, d.ticker, -4);
-      addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
+      node.each(function(d){
+        const g = d3.select(this);
+        g.selectAll("text").remove(); g.selectAll("rect").remove();
+        addTextWithBackground(g, d.ticker, -4);
+        addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
+      });
     });
   });
-});
+
+  window.addEventListener("resize", () => {
+    computeRadius(currentPeriod);
+    runSimulation();
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
 
 })();
 </script>
 </body>
 </html>
+
