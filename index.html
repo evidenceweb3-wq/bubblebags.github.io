@@ -258,10 +258,8 @@ text {
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
-  // 👇 Run once at page load
-computeRadius(currentPeriod);
+  computeRadius(currentPeriod);
 setInitialPositions();
-resolveCollisions();
 
 
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
@@ -570,6 +568,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
