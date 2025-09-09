@@ -266,11 +266,12 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const fillFactor = 0.9; // <-- fill 90% of container
+  // total container area
+  const fillFactor = 0.9; // how much of container we want to fill
   const approxArea = (width * height * fillFactor) / tokens.length;
   let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  // Mobile adjustment
+  // Mobile adjustment (untouched)
   if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
   const scale = d3.scaleSqrt()
@@ -281,6 +282,7 @@ text {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
 }
+
 
 
   function getRadiusScale() {
@@ -298,23 +300,24 @@ text {
 }
 
 function setInitialPositions() {
-  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  const paddingAdjusted = width < 768 ? 12 : 5;
+  const padding = 5; // keeps bubbles from touching edges
   const scale = getRadiusScale();
 
   tokens.forEach((d, i) => {
     d.r = scale(d.value || 1);
 
+    // spread bubbles evenly in circle (desktop) or randomish
     const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
-    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 }
+
 
 // 👇 Run once at page load
 setInitialPositions();
@@ -543,4 +546,5 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
