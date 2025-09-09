@@ -261,16 +261,16 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  const fillFactor = width >= 768 ? 0.9 : 0.75; // 90% for desktop
+  const fillFactor = 0.9; // <-- fill 90% of container
   const approxArea = (width * height * fillFactor) / tokens.length;
   let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  // Desktop: allow bigger bubbles to fill more space
-  const maxR = Math.min(maxRadius, maxSafeRadius);
+  // Mobile adjustment
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, maxR]);
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
   tokens.forEach(d => {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
@@ -296,59 +296,20 @@ function setInitialPositions() {
   const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
+
   const paddingAdjusted = width < 768 ? 12 : 5;
   const scale = getRadiusScale();
 
-  if (width < 768) {
-    // MOBILE: maintain previous layout (radial)
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const padding = 10;
-    tokens.forEach((d, i) => {
-      d.r = scale(d.value || 1);
-      const angle = (i / tokens.length) * Math.PI * 2;
-      d.x = centerX + Math.cos(angle) * (width / 2 - d.r - padding);
-      d.y = centerY + Math.sin(angle) * (height / 2 - d.r - padding);
-      d.vx = (Math.random() - 0.5) * initialSpeed;
-      d.vy = (Math.random() - 0.5) * initialSpeed;
-    });
-  } else {
-    // DESKTOP: fill container fully
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const maxContainerRadius = Math.min(width, height) / 2 * 0.95;
+  tokens.forEach((d, i) => {
+    d.r = scale(d.value || 1);
 
-    tokens.forEach(d => {
-      d.r = scale(d.value || 1);
-
-      let safe = false;
-      let attempts = 0;
-      while (!safe && attempts < 500) {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = Math.sqrt(Math.random()) * (maxContainerRadius - d.r);
-        d.x = centerX + Math.cos(angle) * radius;
-        d.y = centerY + Math.sin(angle) * radius;
-
-        safe = true;
-        for (let i = 0; i < tokens.indexOf(d); i++) {
-          const other = tokens[i];
-          const dx = d.x - other.x;
-          const dy = d.y - other.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < d.r + other.r + paddingAdjusted) {
-            safe = false;
-            break;
-          }
-        }
-        attempts++;
-      }
-
-      d.vx = (Math.random() - 0.5) * initialSpeed;
-      d.vy = (Math.random() - 0.5) * initialSpeed;
-    });
-  }
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
+    d.vx = (Math.random() - 0.5) * initialSpeed;
+    d.vy = (Math.random() - 0.5) * initialSpeed;
+  });
 }
-
 
 // 👇 Run once at page load
 setInitialPositions();
@@ -358,9 +319,11 @@ window.addEventListener("resize", () => {
   setInitialPositions();
 });
 
+
 // --- Run ---
 computeRadius(currentPeriod);
 setInitialPositions();
+
 
 
   computeRadius(currentPeriod);
@@ -490,60 +453,42 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
   });
 
   // ----- ANIMATION & COLLISION -----
-  function animate() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const center = { x: width/2, y: height/2 };
-
-  tokens.forEach(d => {
-    // Mouse attraction
-    const dx = mouse.x - d.x, dy = mouse.y - d.y;
-    d.vx += dx * motionStrength;
-    d.vy += dy * motionStrength;
-
-    // Weak attraction to center (desktop only)
-    if(width >= 768){
-      const dxC = center.x - d.x, dyC = center.y - d.y;
-      d.vx += dxC * motionStrength * 0.05;
-      d.vy += dyC * motionStrength * 0.05;
-    }
-
-    // Apply velocity
-    d.x += d.vx; d.y += d.vy;
-
-    // Friction
-    d.vx *= 0.98; d.vy *= 0.98;
-
-    // Bounds
-    if(d.x-d.r<0){d.x=d.r; d.vx*=-0.5;}
-    if(d.x+d.r>width){d.x=width-d.r; d.vx*=-0.5;}
-    if(d.y-d.r<0){d.y=d.r; d.vy*=-0.5;}
-    if(d.y+d.r>height){d.y=height-d.r; d.vy*=-0.5;}
-  });
-
-  // Collision
-  for(let i=0;i<tokens.length;i++){
-    for(let j=i+1;j<tokens.length;j++){
-      const a=tokens[i], b=tokens[j];
-      const dx=b.x-a.x, dy=b.y-a.y;
-      let dist=Math.sqrt(dx*dx+dy*dy);
-      const minDist=a.r+b.r+collisionPadding;
-      if(dist<minDist){
-        const overlap=(minDist-dist)/2;
-        const nx=dx/(dist||1), ny=dy/(dist||1);
-        a.x-=nx*overlap; a.y-=ny*overlap;
-        b.x+=nx*overlap; b.y+=ny*overlap;
-        const k=0.3; // velocity adjustment
-        a.vx-=nx*k; a.vy-=ny*k;
-        b.vx+=nx*k; b.vy+=ny*k;
+  function animate(){
+    tokens.forEach(d=>{
+      const dx=mouse.x-d.x, dy=mouse.y-d.y;
+      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
+    });
+    tokens.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      d.vx*=0.98; d.vy*=0.98;
+      if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
+      if(d.x+d.r>width){d.x=width-d.r; d.vx*=-1;}
+      if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
+      if(d.y+d.r>height){d.y=height-d.r; d.vy*=-1;}
+    });
+    for(let i=0;i<tokens.length;i++){
+      for(let j=i+1;j<tokens.length;j++){
+        const a=tokens[i], b=tokens[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const minDist=a.r+b.r+collisionPadding;
+        if(dist<minDist){
+          const overlap=(minDist-dist)/2;
+          const nx=dx/dist, ny=dy/dist;
+          a.x-=nx*overlap; a.y-=ny*overlap;
+          b.x+=nx*overlap; b.y+=ny*overlap;
+          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+          if(dot>0){
+            const k=dot*0.5;
+            a.vx-=k*nx; a.vy-=k*ny;
+            b.vx+=k*nx; b.vy+=k*ny;
+          }
+        }
       }
     }
+    node.attr("transform",d=>`translate(${d.x},${d.y})`);
+    requestAnimationFrame(animate);
   }
-
-  node.attr("transform", d=>`translate(${d.x},${d.y})`);
-  requestAnimationFrame(animate);
-}
-
   animate();
 
   // ----- BUTTONS -----
@@ -593,5 +538,3 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
-
-
