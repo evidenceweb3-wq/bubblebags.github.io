@@ -187,8 +187,8 @@ text {
   const svg = d3.select("#svg");
   const popup = document.getElementById("popup");
 
-  const minRadius = 20;
-  const maxRadius = 120;
+  const minRadius = 25;
+  const maxRadius = 125;
   const collisionPadding = 3;
   const motionStrength = 0.00009;
   const initialSpeed = 2;
@@ -279,18 +279,31 @@ text {
   });
 }
 
+  function getRadiusScale() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
 
+  const minRadius = width < 768 ? 12 : 20;  
+  const maxRadius = width < 768 ? 60 : 140;  
+
+  const maxVal = d3.max(tokens, d => d.value || 1);
+
+  return d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, maxRadius]);
+}
 
 function setInitialPositions() {
   const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  // Smaller padding on desktop so bubbles fill container more
-  // Slightly larger on mobile to avoid clipping
   const paddingAdjusted = width < 768 ? 12 : 5;
+  const scale = getRadiusScale();
 
   tokens.forEach((d, i) => {
+    d.r = scale(d.value || 1);
+
     const angle = (i / tokens.length) * Math.PI * 2;
     d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
     d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
@@ -298,6 +311,14 @@ function setInitialPositions() {
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 }
+
+// 👇 Run once at page load
+setInitialPositions();
+
+// 👇 Run again on resize
+window.addEventListener("resize", () => {
+  setInitialPositions();
+});
 
 
 // --- Run ---
