@@ -187,11 +187,11 @@ text {
   const svg = d3.select("#svg");
   const popup = document.getElementById("popup");
 
-  const minRadius = 25;
-  const maxRadius = 80;
-  const collisionPadding = 7;
+  const minRadius = 20;
+  const maxRadius = 120;
+  const collisionPadding = 3;
   const motionStrength = 0.00009;
-  const initialSpeed = 0.15;
+  const initialSpeed = 2;
 
   // Tokens
       const tokensData = [
@@ -286,7 +286,9 @@ function setInitialPositions() {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  const paddingAdjusted = width < 768 ? 12 : 10; // slightly less padding on mobile to fit bigger bubbles
+  // Smaller padding on desktop so bubbles fill container more
+  // Slightly larger on mobile to avoid clipping
+  const paddingAdjusted = width < 768 ? 12 : 5;
 
   tokens.forEach((d, i) => {
     const angle = (i / tokens.length) * Math.PI * 2;
@@ -297,25 +299,6 @@ function setInitialPositions() {
   });
 }
 
-
-
-// Initial positions
-function setInitialPositions() {
-  const container = document.getElementById("container");
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  // Dynamic padding for mobile
-  const paddingAdjusted = width < 768 ? 16 : 10;
-
-  tokens.forEach((d,i) => {
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - paddingAdjusted);
-    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - paddingAdjusted);
-    d.vx = (Math.random()-0.5)*initialSpeed;
-    d.vy = (Math.random()-0.5)*initialSpeed;
-  });
-}
 
 // --- Run ---
 computeRadius(currentPeriod);
