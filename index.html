@@ -54,7 +54,6 @@ button {
 }
 button.active { background: #ff8c00; color: #000; }
 
-/* --- Container --- */
 #container {
   width: 90vw;
   height: 90vh;
@@ -66,9 +65,6 @@ button.active { background: #ff8c00; color: #000; }
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 25px #ff8c00;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 svg { width: 100%; height: 100%; }
@@ -103,16 +99,16 @@ text {
 #fund span.label { color: orange; font-weight: 700; margin-right: 4px; }
 #popup img { vertical-align: middle; }
 
-/* --- Social icons --- */
+/* --- NEW: Social icons --- */
 #popup .social-icon {
-  width: 24px;
+  width: 24px;   /* bigger size */
   height: 24px;
   margin-right: 6px;
   transition: transform 0.2s ease;
   cursor: pointer;
 }
 #popup .social-icon:hover {
-  transform: scale(1.2);
+  transform: scale(1.2); /* hover effect */
 }
 
 /* --- Mobile adjustments --- */
@@ -158,7 +154,6 @@ text {
   #fund span.label, #fund span.wallet { font-size: 14px; }
 }
 </style>
-
 
 
 
@@ -258,10 +253,6 @@ text {
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
-  computeRadius(currentPeriod);
-setInitialPositions();
-
-
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
@@ -270,23 +261,16 @@ setInitialPositions();
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // --- Target total area to ~90% of container ---
-  const fillFactor = 0.9;
-  const totalArea = width * height * fillFactor;
+  const fillFactor = 0.9; // <-- fill 90% of container
+  const approxArea = (width * height * fillFactor) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  // Each bubble gets this much area (approx)
-  const avgArea = totalArea / tokens.length;
-  let baseRadius = Math.sqrt(avgArea / Math.PI);
+  // Mobile adjustment
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
-  // --- Mobile (smaller, safe size) ---
-  if (width < 768) {
-    baseRadius = Math.min(baseRadius * 1.2, width / 6);
-  }
-
-  // --- Scale radius by % change, but keep balance ---
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([baseRadius * 0.6, baseRadius * 1.4]); // spread around base radius
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
   tokens.forEach(d => {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
@@ -294,126 +278,112 @@ setInitialPositions();
 }
 
 
+  function getRadiusScale() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+
+  const minRadius = width < 768 ? 12 : 20;  
+  const maxRadius = width < 768 ? 60 : 140;  
+
+  const maxVal = d3.max(tokens, d => d.value || 1);
+
+  return d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, maxRadius]);
+}
 
 function setInitialPositions() {
+  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  tokens.forEach(d => {
-    d.x = Math.random() * (width - 2 * d.r) + d.r;
-    d.y = Math.random() * (height - 2 * d.r) + d.r;
+  const paddingAdjusted = width < 768 ? 12 : 5;
+  const scale = getRadiusScale();
+
+  tokens.forEach((d, i) => {
+    d.r = scale(d.value || 1);
+
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
-
-  resolveCollisions(400); // more passes for a packed look
 }
 
+// 👇 Run once at page load
+setInitialPositions();
 
-function resolveCollisions(iterations = 300) {
-  const padding = 2;
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  for (let k = 0; k < iterations; k++) {
-    for (let i = 0; i < tokens.length; i++) {
-      for (let j = i + 1; j < tokens.length; j++) {
-        const a = tokens[i], b = tokens[j];
-        let dx = b.x - a.x;
-        let dy = b.y - a.y;
-        let dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = a.r + b.r + padding;
-
-        if (dist < minDist) {
-          if (dist === 0) {
-            dx = (Math.random() - 0.5) * 0.1;
-            dy = (Math.random() - 0.5) * 0.1;
-            dist = Math.sqrt(dx * dx + dy * dy);
-          }
-          const overlap = (minDist - dist) / 2;
-          const nx = dx / dist, ny = dy / dist;
-          a.x -= nx * overlap; a.y -= ny * overlap;
-          b.x += nx * overlap; b.y += ny * overlap;
-        }
-      }
-    }
-
-    // Keep bubbles inside container
-    tokens.forEach(d => {
-      if (d.x - d.r < 0) d.x = d.r;
-      if (d.x + d.r > width) d.x = width - d.r;
-      if (d.y - d.r < 0) d.y = d.r;
-      if (d.y + d.r > height) d.y = height - d.r;
-    });
-  }
-}
-
-
-
-
-
-
-  // 👇 Run once at page load
-  computeRadius(currentPeriod);
-  setInitialPositions();
-  resolveCollisions();
-
-  // 👇 Run again on resize
+// 👇 Run again on resize
 window.addEventListener("resize", () => {
-    computeRadius(currentPeriod);
-    setInitialPositions();
-    resolveCollisions();
+  setInitialPositions();
 });
 
 
-  // ----- NODE CREATION -----
-  const node = svg.selectAll("g").data(tokens).enter().append("g")
-    .attr("transform", d => `translate(${d.x},${d.y})`)
-    .style("cursor", "pointer");
+// --- Run ---
+computeRadius(currentPeriod);
+setInitialPositions();
 
-  const circles = node.append("circle")
-    .attr("r", d => d.r)
-    .attr("fill", "none")
-    .attr("stroke", d => getChange(d) >= 0 ? "#01fe41" : "#fe0289")
-    .attr("stroke-width", 3)
-    .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
 
-  node.on("mouseover", function(event, d) {
-    d3.select(this).select("circle")
-      .attr("stroke", "#fff")
-      .style("filter", "drop-shadow(0 0 30px #fff)");
-  }).on("mouseout", function(event, d) {
-    d3.select(this).select("circle")
-      .attr("stroke", getChange(d) >= 0 ? "#01fe41" : "#fe0289")
-      .style("filter", getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
+
+  computeRadius(currentPeriod);
+
+  const padding = 10;
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
   });
 
-  node.append("clipPath").attr("id", (d, i) => `clip-${i}`)
-    .append("circle").attr("r", d => d.r * 0.85);
+  const node = svg.selectAll("g").data(tokens).enter().append("g")
+    .attr("transform", d => `translate(${d.x},${d.y})`)
+    .style("cursor","pointer");
+
+  const circles = node.append("circle")
+  .attr("r", d=>d.r)
+  .attr("fill","none")
+  .attr("stroke",d=>getChange(d)>=0?"#01fe41":"#fe0289")
+  .attr("stroke-width",3)
+  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+
+node.on("mouseover", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke","#fff")
+    .style("filter","drop-shadow(0 0 30px #fff)");
+}).on("mouseout", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
+    .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+});
+
+  node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
+    .append("circle").attr("r",d=>d.r*0.85);
 
   node.append("image")
-    .attr("xlink:href", d => d.logo)
-    .attr("x", d => -d.r * 0.85)
-    .attr("y", d => -d.r * 0.85)
-    .attr("width", d => 2 * d.r * 0.85)
-    .attr("height", d => 2 * d.r * 0.85)
-    .attr("clip-path", (d, i) => `url(#clip-${i})`);
+    .attr("xlink:href",d=>d.logo)
+    .attr("x",d=>-d.r*0.85)
+    .attr("y",d=>-d.r*0.85)
+    .attr("width",d=>2*d.r*0.85)
+    .attr("height",d=>2*d.r*0.85)
+    .attr("clip-path",(d,i)=>`url(#clip-${i})`);
 
-  function addTextWithBackground(g, textStr, dy) {
-    const text = g.append("text").attr("dy", dy).text(textStr)
-      .attr("text-anchor", "middle").attr("fill", "#fff")
-      .attr("font-weight", "700").style("pointer-events", "none")
-      .style("text-shadow", "2px 2px 4px #000");
-    const bbox = text.node().getBBox();
-    g.insert("rect", "text")
-      .attr("x", bbox.x - 4).attr("y", bbox.y - 2)
-      .attr("width", bbox.width + 8).attr("height", bbox.height + 4)
-      .attr("rx", 3).attr("fill", "rgba(0,0,0,0.5)");
+  function addTextWithBackground(g,textStr,dy){
+    const text=g.append("text").attr("dy",dy).text(textStr)
+      .attr("text-anchor","middle").attr("fill","#fff")
+      .attr("font-weight","700").style("pointer-events","none")
+      .style("text-shadow","2px 2px 4px #000");
+    const bbox=text.node().getBBox();
+    g.insert("rect","text")
+      .attr("x",bbox.x-4).attr("y",bbox.y-2)
+      .attr("width",bbox.width+8).attr("height",bbox.height+4)
+      .attr("rx",3).attr("fill","rgba(0,0,0,0.5)");
   }
 
-  node.each(function(d) {
-    addTextWithBackground(d3.select(this), d.ticker, -4);
-    addTextWithBackground(d3.select(this), (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
+  node.each(function(d){
+    addTextWithBackground(d3.select(this),d.ticker,-4);
+    addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
   });
 
   // Popup update with thousand separator using comma
@@ -568,18 +538,3 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
