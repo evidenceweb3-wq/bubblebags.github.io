@@ -306,36 +306,47 @@ function setInitialPositions() {
   resolveCollisions(300);
 }
 
-function resolveCollisions(iterations = 200) {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const padding = 2;
-
+function resolveCollisions(iterations = 300) {
+  const padding = 2; // tighter packing
   for (let k = 0; k < iterations; k++) {
     for (let i = 0; i < tokens.length; i++) {
-      const a = tokens[i];
-
-      // keep inside container
-      a.x = Math.max(a.r, Math.min(width - a.r, a.x));
-      a.y = Math.max(a.r, Math.min(height - a.r, a.y));
-
       for (let j = i + 1; j < tokens.length; j++) {
-        const b = tokens[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const a = tokens[i], b = tokens[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
         const minDist = a.r + b.r + padding;
+
         if (dist < minDist) {
+          if (dist === 0) { // avoid stuck same point
+            dx = (Math.random() - 0.5) * 0.1;
+            dy = (Math.random() - 0.5) * 0.1;
+            dist = Math.sqrt(dx * dx + dy * dy);
+          }
           const overlap = (minDist - dist) / 2;
-          const nx = dx / (dist || 0.01);
-          const ny = dy / (dist || 0.01);
-          a.x -= nx * overlap; a.y -= ny * overlap;
-          b.x += nx * overlap; b.y += ny * overlap;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          a.x -= nx * overlap;
+          a.y -= ny * overlap;
+          b.x += nx * overlap;
+          b.y += ny * overlap;
         }
       }
     }
+
+    // Keep bubbles inside bounds
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    tokens.forEach(d => {
+      if (d.x - d.r < 0) d.x = d.r;
+      if (d.x + d.r > width) d.x = width - d.r;
+      if (d.y - d.r < 0) d.y = d.r;
+      if (d.y + d.r > height) d.y = height - d.r;
+    });
   }
 }
+
+
 
 
 
@@ -553,6 +564,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
