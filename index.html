@@ -258,6 +258,12 @@ text {
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
+  // 👇 Run once at page load
+computeRadius(currentPeriod);
+setInitialPositions();
+resolveCollisions();
+
+
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
@@ -356,11 +362,12 @@ function resolveCollisions(iterations = 300) {
   resolveCollisions();
 
   // 👇 Run again on resize
-  window.addEventListener("resize", () => {
+window.addEventListener("resize", () => {
     computeRadius(currentPeriod);
     setInitialPositions();
     resolveCollisions();
-  });
+});
+
 
   // ----- NODE CREATION -----
   const node = svg.selectAll("g").data(tokens).enter().append("g")
@@ -564,6 +571,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
