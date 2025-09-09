@@ -260,17 +260,23 @@ text {
   const height = container.clientHeight;
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Calculate max radius that can fit all bubbles in current container
-  const totalArea = width * height;
-  const areaPerBubble = totalArea / tokens.length;
+  // Fraction of container to fill
+  const targetFill = 0.85; // 85% of container area
+  const totalArea = width * height * targetFill;
 
-  tokens.forEach(d => {
-    // Base radius proportional to sqrt(areaPerBubble) and scaled by change
-    const relativeSize = Math.abs(Number(d["change" + period] || 0)) / maxVal;
-    d.r = Math.sqrt(areaPerBubble / Math.PI) * (0.6 + 0.4 * relativeSize); 
-    // 0.6 = minimum fraction to avoid too small bubbles
+  // Compute relative weights
+  let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxVal + 0.1); // +0.1 to avoid zero
+  const weightSum = d3.sum(weights);
+
+  // Compute radii so total area ≈ targetFill * container area
+  tokens.forEach((d,i) => {
+    const frac = weights[i] / weightSum;
+    d.r = Math.sqrt((frac * totalArea) / Math.PI);
+    // Clamp to min/max
+    d.r = Math.max(minRadius, Math.min(maxRadius, d.r));
   });
 }
+
 
 
   // ----- FORCE SIMULATION TO AVOID OVERLAPS -----
@@ -536,5 +542,6 @@ text {
 </script>
 </body>
 </html>
+
 
 
