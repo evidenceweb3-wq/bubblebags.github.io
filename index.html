@@ -99,27 +99,42 @@ text {
 #fund span.label { color: orange; font-weight: 700; margin-right: 4px; }
 #popup img { vertical-align: middle; }
 
-/* --- NEW: Social icons --- */
+/* --- Social icons --- */
 #popup .social-icon {
-  width: 24px;   /* bigger size */
+  width: 24px;
   height: 24px;
   margin-right: 6px;
   transition: transform 0.2s ease;
   cursor: pointer;
 }
 #popup .social-icon:hover {
-  transform: scale(1.2); /* hover effect */
+  transform: scale(1.2);
+}
+
+/* --- Desktop popup: doble tamaño --- */
+@media (min-width: 769px) {
+  #popup {
+    padding: 20px 30px;      /* doble padding */
+    font-size: 16px;         /* texto más grande */
+    border-width: 4px;       /* borde más grueso */
+    border-radius: 14px;     /* más redondeado */
+  }
+  #popup .social-icon {
+    width: 48px;             /* doble tamaño */
+    height: 48px;
+    margin-right: 8px;
+  }
 }
 
 /* --- Mobile adjustments --- */
 @media (max-width: 768px) {
   body {
-    justify-content: center; /* vertically center all content */
+    justify-content: center;
     padding: 0 8px;
   }
 
   header {
-    margin: 10px 0; /* tighter spacing on mobile */
+    margin: 10px 0;
   }
 
   header h2 { 
@@ -146,7 +161,7 @@ text {
 
   #container {
     width: 90vmin;
-    height: calc(90vmin * 16 / 9); /* mobile: 9:16 vertical */
+    height: calc(90vmin * 16 / 9);
     max-height: 85vh;
   }
 
@@ -154,6 +169,7 @@ text {
   #fund span.label, #fund span.wallet { font-size: 14px; }
 }
 </style>
+
 
 
 
@@ -562,6 +578,7 @@ function runSimulation() {
 </script>
 </body>
 </html>
+
 
 
 
