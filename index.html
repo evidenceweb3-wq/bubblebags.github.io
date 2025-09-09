@@ -258,47 +258,45 @@ text {
   function computeRadius(period) {
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+  const maxChange = d3.max(tokens.map(d => Math.abs(Number(d["change" + period] || 0)))) || 1;
 
-  // Fraction of container to fill
-  const targetFill = 0.85; // 85% of container area
-  const totalArea = width * height * targetFill;
+  // Fill ~85% of container
+  const totalArea = width * height * 0.85;
 
-  // Compute relative weights
-  let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxVal + 0.1); // +0.1 to avoid zero
-  const weightSum = d3.sum(weights);
+  // Weights based on absolute change
+  let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxChange + 0.1);
+  const sumWeights = d3.sum(weights);
 
-  // Compute radii so total area ≈ targetFill * container area
-  tokens.forEach((d,i) => {
-    const frac = weights[i] / weightSum;
-    d.r = Math.sqrt((frac * totalArea) / Math.PI);
-    // Clamp to min/max
+  // Compute radii
+  tokens.forEach((d,i)=>{
+    const frac = weights[i] / sumWeights;
+    d.r = Math.sqrt((frac * totalArea)/Math.PI);
     d.r = Math.max(minRadius, Math.min(maxRadius, d.r));
   });
 }
 
-
-
-  // ----- FORCE SIMULATION TO AVOID OVERLAPS -----
-  function runSimulation() {
+function runSimulation() {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  const simulation = d3.forceSimulation(tokens)
-    .force("x", d3.forceX(width / 2).strength(0.1))
-    .force("y", d3.forceY(height / 2).strength(0.1))
+  const sim = d3.forceSimulation(tokens)
+    .force("x", d3.forceX(width/2).strength(0.08))
+    .force("y", d3.forceY(height/2).strength(0.08))
     .force("collide", d3.forceCollide(d => d.r + collisionPadding))
     .stop();
 
-  for (let i = 0; i < 300; i++) simulation.tick(); // more ticks for tight packing
+  // Increase ticks for tighter packing
+  for(let i=0;i<500;i++) sim.tick();
 
-  tokens.forEach(d => {
-    d.x = Math.max(d.r, Math.min(width - d.r, d.x));
-    d.y = Math.max(d.r, Math.min(height - d.r, d.y));
-    d.vx = (Math.random() - 0.5) * initialSpeed;
-    d.vy = (Math.random() - 0.5) * initialSpeed;
+  // Clamp within container
+  tokens.forEach(d=>{
+    d.x = Math.max(d.r, Math.min(width-d.r, d.x));
+    d.y = Math.max(d.r, Math.min(height-d.r, d.y));
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
   });
 }
+
 
 
   // ----- INITIAL SETUP -----
@@ -542,6 +540,7 @@ text {
 </script>
 </body>
 </html>
+
 
 
 
