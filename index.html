@@ -183,6 +183,8 @@ text {
 <script>
 (async function () {
   const container = document.getElementById("container");
+  const width = container.clientWidth;
+  const height = container.clientHeight;
   const svg = d3.select("#svg");
   const popup = document.getElementById("popup");
 
@@ -191,7 +193,6 @@ text {
   const collisionPadding = 3;
   const motionStrength = 0.00009;
   const initialSpeed = 2;
-  let currentPeriod = "24";
 
   // Tokens
       const tokensData = [
@@ -240,146 +241,254 @@ text {
         change1: Number(p.priceChange?.h1) || 0,
         logo: pair.logo,
         supply: pair.supply,
-        pairId: pair.pairId
+        pairId: pair.pairId,
+        xUrl: pair.xUrl,
+        webUrl: pair.webUrl
       };
     } catch (e) { console.warn("Error", pair.pairId); return null; }
   }
 
+  // ----- INITIAL FETCH -----
   let tokens = (await Promise.allSettled(tokensData.map(fetchPair)))
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
-  // --- Compute radius ---
-function computeRadius(period) {
+  function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
+
+  function computeRadius(period) {
   const width = container.clientWidth;
   const height = container.clientHeight;
+
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  let scale;
-  if (width >= 768) {
-    // Desktop: fill container better
-    const fillFactor = 0.95; // more aggressive
-    const approxArea = (width * height * fillFactor) / tokens.length;
-    const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
-    scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius * 1.2, Math.min(maxRadius, maxSafeRadius)]); 
-    // increased minRadius slightly to avoid tiny bubbles
-  } else {
-    // Mobile: smaller scale
-    scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius, maxRadius * 0.6]);
-  }
+  const fillFactor = 0.9; // <-- fill 90% of container
+  const approxArea = (width * height * fillFactor) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  tokens.forEach(d => { d.r = scale(Math.abs(Number(d["change" + period] || 0))); });
+  // Mobile adjustment
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
+
+  const scale = d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+
+  tokens.forEach(d => {
+    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+  });
 }
 
-// --- Set initial positions ---
+
+  function getRadiusScale() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+
+  const minRadius = width < 768 ? 12 : 20;  
+  const maxRadius = width < 768 ? 60 : 140;  
+
+  const maxVal = d3.max(tokens, d => d.value || 1);
+
+  return d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, maxRadius]);
+}
+
 function setInitialPositions() {
+  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const padding = 5;
 
-  // Random initial placement in container bounds to fill better
-  tokens.forEach(d => {
-    d.x = padding + Math.random() * (width - 2 * padding);
-    d.y = padding + Math.random() * (height - 2 * padding);
+  const paddingAdjusted = width < 768 ? 12 : 5;
+  const scale = getRadiusScale();
+
+  tokens.forEach((d, i) => {
+    d.r = scale(d.value || 1);
+
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
+    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 }
 
+// 👇 Run once at page load
+setInitialPositions();
+
+// 👇 Run again on resize
+window.addEventListener("resize", () => {
+  setInitialPositions();
+});
+
+
+// --- Run ---
+computeRadius(currentPeriod);
+setInitialPositions();
+
+
 
   computeRadius(currentPeriod);
-  setInitialPositions();
-  window.addEventListener("resize", () => { computeRadius(currentPeriod); setInitialPositions(); });
 
-  // --- Nodes ---
-  const node = svg.selectAll("g").data(tokens).enter().append("g")
-    .attr("transform", d => `translate(${d.x},${d.y})`)
-    .style("cursor", "pointer");
-
-  const circles = node.append("circle")
-    .attr("r", d => d.r)
-    .attr("fill", "none")
-    .attr("stroke", d => d.change24 >= 0 ? "#01fe41" : "#fe0289")
-    .attr("stroke-width", 3)
-    .style("filter", d => d.change24 >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
-
-  node.append("clipPath").attr("id", (d, i) => `clip-${i}`).append("circle").attr("r", d => d.r * 0.85);
-  node.append("image")
-    .attr("xlink:href", d => d.logo)
-    .attr("x", d => -d.r * 0.85)
-    .attr("y", d => -d.r * 0.85)
-    .attr("width", d => 2 * d.r * 0.85)
-    .attr("height", d => 2 * d.r * 0.85)
-    .attr("clip-path", (d, i) => `url(#clip-${i})`);
-
-  // --- Animate ---
-  let mouse = { x: container.clientWidth / 2, y: container.clientHeight / 2 };
-  svg.on("mousemove", (event) => { const [mx, my] = d3.pointer(event); mouse.x = mx; mouse.y = my; });
-
-  function animate() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const center = { x: width / 2, y: height / 2 };
-
-  tokens.forEach(d => {
-    // Attraction to mouse
-    const dxMouse = mouse.x - d.x, dyMouse = mouse.y - d.y;
-    d.vx += dxMouse * motionStrength;
-    d.vy += dyMouse * motionStrength;
-
-    // Weak attraction to center (keeps bubbles packed)
-    const dxCenter = center.x - d.x, dyCenter = center.y - d.y;
-    d.vx += dxCenter * motionStrength * 0.05;
-    d.vy += dyCenter * motionStrength * 0.05;
-
-    // Apply velocity
-    d.x += d.vx;
-    d.y += d.vy;
-
-    // Friction
-    d.vx *= 0.95;
-    d.vy *= 0.95;
-
-    // Boundary check
-    if (d.x - d.r < 0) { d.x = d.r; d.vx *= -0.5; }
-    if (d.x + d.r > width) { d.x = width - d.r; d.vx *= -0.5; }
-    if (d.y - d.r < 0) { d.y = d.r; d.vy *= -0.5; }
-    if (d.y + d.r > height) { d.y = height - d.r; d.vy *= -0.5; }
+  const padding = 10;
+  tokens.forEach((d,i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
+    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
+    d.vx = (Math.random()-0.5)*initialSpeed;
+    d.vy = (Math.random()-0.5)*initialSpeed;
   });
 
-  // --- Tight collisions ---
-  for (let i = 0; i < tokens.length; i++) {
-    for (let j = i + 1; j < tokens.length; j++) {
-      const a = tokens[i], b = tokens[j];
-      const dx = b.x - a.x, dy = b.y - a.y;
-      let dist = Math.sqrt(dx * dx + dy * dy);
-      const minDist = a.r + b.r + collisionPadding;
+  const node = svg.selectAll("g").data(tokens).enter().append("g")
+    .attr("transform", d => `translate(${d.x},${d.y})`)
+    .style("cursor","pointer");
 
-      if (dist < minDist) {
-        const overlap = (minDist - dist) / 2;
-        const nx = dx / (dist || 1); // avoid divide by zero
-        const ny = dy / (dist || 1);
+  const circles = node.append("circle")
+  .attr("r", d=>d.r)
+  .attr("fill","none")
+  .attr("stroke",d=>getChange(d)>=0?"#01fe41":"#fe0289")
+  .attr("stroke-width",3)
+  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
-        a.x -= nx * overlap;
-        a.y -= ny * overlap;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
+node.on("mouseover", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke","#fff")
+    .style("filter","drop-shadow(0 0 30px #fff)");
+}).on("mouseout", function(event,d){
+  d3.select(this).select("circle")
+    .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
+    .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+});
 
-        // small velocity adjustment to prevent sticking
-        const k = 0.3;
-        a.vx -= nx * k;
-        a.vy -= ny * k;
-        b.vx += nx * k;
-        b.vy += ny * k;
-      }
-    }
+  node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
+    .append("circle").attr("r",d=>d.r*0.85);
+
+  node.append("image")
+    .attr("xlink:href",d=>d.logo)
+    .attr("x",d=>-d.r*0.85)
+    .attr("y",d=>-d.r*0.85)
+    .attr("width",d=>2*d.r*0.85)
+    .attr("height",d=>2*d.r*0.85)
+    .attr("clip-path",(d,i)=>`url(#clip-${i})`);
+
+  function addTextWithBackground(g,textStr,dy){
+    const text=g.append("text").attr("dy",dy).text(textStr)
+      .attr("text-anchor","middle").attr("fill","#fff")
+      .attr("font-weight","700").style("pointer-events","none")
+      .style("text-shadow","2px 2px 4px #000");
+    const bbox=text.node().getBBox();
+    g.insert("rect","text")
+      .attr("x",bbox.x-4).attr("y",bbox.y-2)
+      .attr("width",bbox.width+8).attr("height",bbox.height+4)
+      .attr("rx",3).attr("fill","rgba(0,0,0,0.5)");
   }
 
-  // Update SVG
-  node.attr("transform", d => `translate(${d.x},${d.y})`);
-  requestAnimationFrame(animate);
-}
+  node.each(function(d){
+    addTextWithBackground(d3.select(this),d.ticker,-4);
+    addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
+  });
 
+  // Popup update with thousand separator using comma
+  let popupInterval;
+  function updatePopup(d){
+    return async function(){
+      try{
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+        const p = (await res.json()).pairs?.[0];
+        if(!p?.baseToken?.symbol) return;
+        const price = Number(p.priceUsd);
+        const change = Number(p["priceChange"]?.[`h${currentPeriod}`]||0);
+        d["change"+currentPeriod]=change;
+        const mcap = Math.round(price*d.supply);
+        const mcapFormatted = mcap.toLocaleString('en-US');
+
+        const g = d3.selectAll("g").filter(dd=>dd.pairId===d.pairId);
+        g.selectAll("text").remove(); g.selectAll("rect").remove();
+        addTextWithBackground(g,d.ticker,-4);
+        addTextWithBackground(g,(change>0?"+":"")+change.toFixed(1)+"%",16);
+        const color = change>=0 ? "#01fe41" : "#fe0289";
+g.select("circle")
+  .attr("stroke", color)
+  .style("filter", change>=0
+    ? "drop-shadow(0 0 15px #01fe41)"
+    : "drop-shadow(0 0 15px #fe0289)"
+  );
+
+
+        let socialsHTML='';
+        if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/ncpwFVXC/XICON2.png"></a>`;
+if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/9Fbgr391/WICON2.png"></a>`;
+
+
+        popup.innerHTML=`<span class="close">✕</span>
+          <b style="color:yellow">${p.baseToken.symbol}</b><br>
+          Price: $${price.toFixed(4)}<br>
+          MCAP: $${mcapFormatted}<br>
+          Change ${currentPeriod}h: <span style="color:${change>=0?'#01fe41':'#fe0289'}">
+  ${(change>0?"+":"")+change.toFixed(2)}%
+</span>
+<br>
+          ${socialsHTML}
+          <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
+      }catch(e){console.warn("Error updating popup",d.pairId);}
+    };
+  }
+
+  node.on("click",(event,d)=>{
+    if(popupInterval) clearInterval(popupInterval);
+    const updater=updatePopup(d);
+    updater();
+    popupInterval=setInterval(updater,60000);
+    popup.style.top="20px"; popup.style.opacity="1";
+
+    const closeBtn = popup.querySelector(".close");
+    if(closeBtn) closeBtn.onclick=()=>{ popup.style.opacity="0"; popup.style.top="-200px"; clearInterval(popupInterval);}
+    event.stopPropagation();
+  });
+
+  document.addEventListener("click",()=>{ popup.style.opacity="0"; popup.style.top="-200px"; if(popupInterval) clearInterval(popupInterval); });
+
+  let mouse={x:width/2,y:height/2};
+  svg.on("mousemove",(event)=>{
+    const [mx,my]=d3.pointer(event);
+    mouse.x=mx; mouse.y=my;
+  });
+
+  // ----- ANIMATION & COLLISION -----
+  function animate(){
+    tokens.forEach(d=>{
+      const dx=mouse.x-d.x, dy=mouse.y-d.y;
+      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
+    });
+    tokens.forEach(d=>{
+      d.x+=d.vx; d.y+=d.vy;
+      d.vx*=0.98; d.vy*=0.98;
+      if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
+      if(d.x+d.r>width){d.x=width-d.r; d.vx*=-1;}
+      if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
+      if(d.y+d.r>height){d.y=height-d.r; d.vy*=-1;}
+    });
+    for(let i=0;i<tokens.length;i++){
+      for(let j=i+1;j<tokens.length;j++){
+        const a=tokens[i], b=tokens[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const minDist=a.r+b.r+collisionPadding;
+        if(dist<minDist){
+          const overlap=(minDist-dist)/2;
+          const nx=dx/dist, ny=dy/dist;
+          a.x-=nx*overlap; a.y-=ny*overlap;
+          b.x+=nx*overlap; b.y+=ny*overlap;
+          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+          if(dot>0){
+            const k=dot*0.5;
+            a.vx-=k*nx; a.vy-=k*ny;
+            b.vx+=k*nx; b.vy+=k*ny;
+          }
+        }
+      }
+    }
+    node.attr("transform",d=>`translate(${d.x},${d.y})`);
+    requestAnimationFrame(animate);
+  }
   animate();
 
   // ----- BUTTONS -----
@@ -429,5 +538,3 @@ function setInitialPositions() {
 </script>
 </body>
 </html>
-
-
