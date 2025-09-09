@@ -266,58 +266,60 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Base scale for radius
+  // Base scale
   let baseScale = d3.scaleSqrt()
     .domain([0, maxVal])
     .range([minRadius, maxRadius]);
 
-  // First assign temporary radius
+  // Initial radii
   tokens.forEach(d => d.r = baseScale(Math.abs(Number(d["change" + period] || 0))));
 
-  // Compute total area of all bubbles
+  // Total bubble area
   const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
+  const containerArea = width * height * 0.90; // target 90% fill
 
-  // Compute container area
-  const containerArea = width * height * 0.95; // fill 95% of container
+  // Scale factor
+  let scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
 
-  // Compute scale factor to make bubbles fill container
-  const scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
-
-  // Apply scale factor to each bubble
+  // Clamp so bubbles never exceed container min side
+  const maxPossibleR = Math.min(width, height) / 4; // safety clamp
   tokens.forEach(d => {
-    d.r *= scaleFactor;
+    d.r = Math.min(d.r * scaleFactor, maxPossibleR);
   });
 }
 
 function setInitialPositions() {
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const padding = 2;
 
-  // Spread bubbles randomly across container
   tokens.forEach(d => {
-    d.x = Math.random() * (width - 2*d.r) + d.r;
-    d.y = Math.random() * (height - 2*d.r) + d.r;
+    d.x = Math.random() * (width - 2 * d.r) + d.r;
+    d.y = Math.random() * (height - 2 * d.r) + d.r;
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 
-  // Resolve collisions to prevent overlap
-  resolveCollisions();
+  // Run collision solver until packed
+  resolveCollisions(300);
 }
 
-
-
-
 function resolveCollisions(iterations = 200) {
-  const padding = 3;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const padding = 2;
+
   for (let k = 0; k < iterations; k++) {
     for (let i = 0; i < tokens.length; i++) {
+      const a = tokens[i];
+
+      // keep inside container
+      a.x = Math.max(a.r, Math.min(width - a.r, a.x));
+      a.y = Math.max(a.r, Math.min(height - a.r, a.y));
+
       for (let j = i + 1; j < tokens.length; j++) {
-        const a = tokens[i], b = tokens[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
+        const b = tokens[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const minDist = a.r + b.r + padding;
         if (dist < minDist) {
@@ -331,6 +333,7 @@ function resolveCollisions(iterations = 200) {
     }
   }
 }
+
 
 
   // 👇 Run once at page load
@@ -547,6 +550,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
