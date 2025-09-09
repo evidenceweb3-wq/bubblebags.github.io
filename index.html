@@ -256,28 +256,33 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   // ----- RADIUS & POSITION -----
-function computeRadius(period) {
+  function computeRadius(period) {
   const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Fill more on desktop
-  const fillFactor = width >= 1024 ? 0.98 : 0.85; // larger fill on desktop
+  // --- CHANGE HERE ---
+  const isDesktop = width >= 1024;
+  const fillFactor = 1.0; // full fill
   const approxArea = (width * height * fillFactor) / tokens.length;
-  const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  const minRadius = width < 768 ? 12 : 20;
+  const minRadius = isDesktop ? 30 : 15;   // bigger minimum on desktop
+  const maxRadius = isDesktop ? 150 : 80;  // bigger maximum on desktop
 
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, maxSafeRadius]);
+    .range([minRadius, maxRadius]);
 
   tokens.forEach(d => {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+
+    // Optional extra boost for desktop
+    if (isDesktop) d.r *= 1.1;
   });
 }
+
 
 function setInitialPositions() {
   const container = document.getElementById("container");
@@ -474,6 +479,7 @@ animate();
 </script>
 </body>
 </html>
+
 
 
 
