@@ -261,71 +261,67 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
 
-    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+  const fillFactor = width < 768 ? 0.9 : 0.95;
+  const approxArea = (width * height * fillFactor) / tokens.length;
 
-    const fillFactor = width < 768 ? 0.9 : 0.95;
-    const approxArea = (width * height * fillFactor) / tokens.length;
-    let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
-    if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
-    const scale = d3.scaleSqrt()
-      .domain([0, maxVal])
-      .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+  const scale = d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
-    tokens.forEach(d => {
-      d.r = scale(Math.abs(Number(d["change" + period] || 0)));
-    });
-  }
+  tokens.forEach(d => {
+    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+  });
+}
 
-  function getRadiusScale() {
-    const width = container.clientWidth;
-    const minRadius = width < 768 ? 12 : 20;
-    const maxRadius = width < 768 ? 60 : 140;
-    const maxVal = d3.max(tokens, d => d.value || 1);
-    return d3.scaleSqrt()
-      .domain([0, maxVal])
-      .range([minRadius, maxRadius]);
-  }
+function setInitialPositions() {
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const padding = 5;
 
-  function setInitialPositions() {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const padding = 5;
-    const scale = getRadiusScale();
+  // Arrange tokens in a circle around the center
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radiusCircle = Math.min(width, height) / 2 - d3.max(tokens, d => d.r) - padding;
 
-    tokens.forEach((d, i) => {
-      d.r = scale(d.value || 1);
-      const angle = (i / tokens.length) * Math.PI * 2;
-      d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
-      d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
-      d.vx = (Math.random() - 0.5) * initialSpeed;
-      d.vy = (Math.random() - 0.5) * initialSpeed;
-    });
-  }
+  tokens.forEach((d, i) => {
+    const angle = (i / tokens.length) * Math.PI * 2;
+    d.x = centerX + Math.cos(angle) * radiusCircle;
+    d.y = centerY + Math.sin(angle) * radiusCircle;
+    d.vx = (Math.random() - 0.5) * initialSpeed;
+    d.vy = (Math.random() - 0.5) * initialSpeed;
+  });
 
-  function resolveCollisions(iterations = 200) {
-    const padding = 3;
-    for (let k = 0; k < iterations; k++) {
-      for (let i = 0; i < tokens.length; i++) {
-        for (let j = i + 1; j < tokens.length; j++) {
-          const a = tokens[i], b = tokens[j];
-          const dx = b.x - a.x, dy = b.y - a.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const minDist = a.r + b.r + padding;
-          if (dist < minDist) {
-            const overlap = (minDist - dist) / 2;
-            const nx = dx / (dist || 0.01);
-            const ny = dy / (dist || 0.01);
-            a.x -= nx * overlap; a.y -= ny * overlap;
-            b.x += nx * overlap; b.y += ny * overlap;
-          }
+  resolveCollisions();
+}
+
+function resolveCollisions(iterations = 200) {
+  const padding = 3;
+  for (let k = 0; k < iterations; k++) {
+    for (let i = 0; i < tokens.length; i++) {
+      for (let j = i + 1; j < tokens.length; j++) {
+        const a = tokens[i], b = tokens[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = a.r + b.r + padding;
+        if (dist < minDist) {
+          const overlap = (minDist - dist) / 2;
+          const nx = dx / (dist || 0.01);
+          const ny = dy / (dist || 0.01);
+          a.x -= nx * overlap; a.y -= ny * overlap;
+          b.x += nx * overlap; b.y += ny * overlap;
         }
       }
     }
   }
+}
+
 
   // 👇 Run once at page load
   computeRadius(currentPeriod);
@@ -541,6 +537,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
