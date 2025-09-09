@@ -263,8 +263,10 @@ text {
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
   // Safe maximum radius per token based on container area
-  const approxArea = (width * height) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
+  const fillFactor = 0.9; // 90% of container
+  const approxArea = (width * height * fillFactor) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 2;
+
 
   // Mobile: reduce radius slightly to prevent overcrowding
   if (width < 768) {
@@ -540,5 +542,6 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
