@@ -190,9 +190,10 @@ text {
 
   const minRadius = 25;
   const maxRadius = 125;
-  const collisionPadding = 3;
+  const collisionPadding = 6;  // was 3 → more space between bubbles
   const motionStrength = 0.00009;
   const initialSpeed = 2;
+
 
   // Tokens
       const tokensData = [
@@ -261,7 +262,7 @@ text {
   const maxChange = d3.max(tokens.map(d => Math.abs(Number(d["change" + period] || 0)))) || 1;
 
   // Fill ~85% of container
-  const totalArea = width * height * 0.85;
+  const totalArea = width * height * 0.72;
 
   // Weights based on absolute change
   let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxChange + 0.1);
@@ -540,6 +541,7 @@ function runSimulation() {
 </script>
 </body>
 </html>
+
 
 
 
