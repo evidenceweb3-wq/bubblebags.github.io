@@ -495,23 +495,41 @@ text {
   });
 
   window.addEventListener("resize", () => {
-    computeRadius(currentPeriod);
-    runSimulation();
-    node.attr("transform", d => `translate(${d.x},${d.y})`);
-  });
+  const width = container.clientWidth;
+  const height = container.clientHeight;
 
-  window.addEventListener("resize", () => {
+  // 1️⃣ Recompute radii
   computeRadius(currentPeriod);
+
+  // 2️⃣ Re-run simulation to reposition bubbles
   runSimulation();
+
+  // 3️⃣ Update bubble positions
   node.attr("transform", d => `translate(${d.x},${d.y})`);
+
+  // 4️⃣ Update circle radius
   node.select("circle").attr("r", d => d.r);
+
+  // 5️⃣ Update clipPath radius
   node.select("clipPath circle").attr("r", d => d.r * 0.85);
+
+  // 6️⃣ Update image size & position
   node.select("image")
       .attr("x", d => -d.r * 0.85)
       .attr("y", d => -d.r * 0.85)
       .attr("width", d => 2 * d.r * 0.85)
       .attr("height", d => 2 * d.r * 0.85);
+
+  // 7️⃣ Update text labels
+  node.each(function(d){
+    const g = d3.select(this);
+    g.selectAll("text").remove();
+    g.selectAll("rect").remove();
+    addTextWithBackground(g, d.ticker, -4);
+    addTextWithBackground(g, (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
+  });
 });
+
 
 
 })();
