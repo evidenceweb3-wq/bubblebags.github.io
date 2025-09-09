@@ -188,11 +188,28 @@ text {
   const svg = d3.select("#svg");
   const popup = document.getElementById("popup");
 
-  const minRadius = 25;
-  const maxRadius = 125;
-  const collisionPadding = 6;  // was 3 → more space between bubbles
+  let minRadius = 25;
+let maxRadius = 125;
+let collisionPadding = 6;  // default desktop
+
+function adjustForMobile() {
+  if (window.innerWidth <= 768) {
+    minRadius = 18;
+    maxRadius = 70;
+    collisionPadding = 10;
+  } else {
+    minRadius = 25;
+    maxRadius = 125;
+    collisionPadding = 6;
+  }
+}
+
+// Run once initially
+adjustForMobile();
+
   const motionStrength = 0.00009;
   const initialSpeed = 2;
+  
 
 
   // Tokens
@@ -500,6 +517,9 @@ function runSimulation() {
   });
 
   window.addEventListener("resize", () => {
+  // 🔹 Adjust radius and collision padding for mobile
+  adjustForMobile();
+
   const width = container.clientWidth;
   const height = container.clientHeight;
 
@@ -508,7 +528,7 @@ function runSimulation() {
 
   // 2️⃣ Re-run simulation to reposition bubbles
   runSimulation();
-
+  
   // 3️⃣ Update bubble positions
   node.attr("transform", d => `translate(${d.x},${d.y})`);
 
@@ -537,10 +557,12 @@ function runSimulation() {
 
 
 
+
 })();
 </script>
 </body>
 </html>
+
 
 
 
