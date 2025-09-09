@@ -264,29 +264,32 @@ text {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
+  const isMobile = width < 768;
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Base scale
+  // Base scale from change %
   let baseScale = d3.scaleSqrt()
     .domain([0, maxVal])
     .range([minRadius, maxRadius]);
 
-  // Initial radii
-  tokens.forEach(d => d.r = baseScale(Math.abs(Number(d["change" + period] || 0))));
-
-  // Total bubble area
-  const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
-  const containerArea = width * height * 0.90; // target 90% fill
-
-  // Scale factor
-  let scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
-
-  // Clamp so bubbles never exceed container min side
-  const maxPossibleR = Math.min(width, height) / 4; // safety clamp
   tokens.forEach(d => {
-    d.r = Math.min(d.r * scaleFactor, maxPossibleR);
+    d.r = baseScale(Math.abs(Number(d["change" + period] || 0)));
   });
+
+  if (!isMobile) {
+    // --- Desktop only adjustment to fill container ---
+    const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
+    const containerArea = width * height * 0.85; // target fill
+    let scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
+
+    // shrink if too large
+    const maxPossibleR = Math.min(width, height) / 6; 
+    tokens.forEach(d => {
+      d.r = Math.min(d.r * scaleFactor, maxPossibleR);
+    });
+  }
 }
+
 
 function setInitialPositions() {
   const width = container.clientWidth;
@@ -550,6 +553,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
