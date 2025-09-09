@@ -261,167 +261,132 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Fill factor for desktop vs mobile
-  const fillFactor = width < 768 ? 0.9 : 0.95;
+    const fillFactor = width < 768 ? 0.9 : 0.95;
+    const approxArea = (width * height * fillFactor) / tokens.length;
+    let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+    if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
-  // Total area for each bubble (approx)
-  const approxArea = (width * height * fillFactor) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+    const scale = d3.scaleSqrt()
+      .domain([0, maxVal])
+      .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
 
-  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
-
-  const scale = d3.scaleSqrt()
-    .domain([0, maxVal])
-    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
-
-  tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
-  });
-}
-
-
-
+    tokens.forEach(d => {
+      d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+    });
+  }
 
   function getRadiusScale() {
-  const container = document.getElementById("container");
-  const width = container.clientWidth;
+    const width = container.clientWidth;
+    const minRadius = width < 768 ? 12 : 20;
+    const maxRadius = width < 768 ? 60 : 140;
+    const maxVal = d3.max(tokens, d => d.value || 1);
+    return d3.scaleSqrt()
+      .domain([0, maxVal])
+      .range([minRadius, maxRadius]);
+  }
 
-  const minRadius = width < 768 ? 12 : 20;  
-  const maxRadius = width < 768 ? 60 : 140;  
+  function setInitialPositions() {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const padding = 5;
+    const scale = getRadiusScale();
 
-  const maxVal = d3.max(tokens, d => d.value || 1);
-
-  return d3.scaleSqrt()
-    .domain([0, maxVal])
-    .range([minRadius, maxRadius]);
-}
-
-function setInitialPositions() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const padding = 5;
-
-  const scale = getRadiusScale();
-
-  tokens.forEach((d, i) => {
-    d.r = scale(d.value || 1);
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
-    d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
-    d.vx = (Math.random() - 0.5) * initialSpeed;
-    d.vy = (Math.random() - 0.5) * initialSpeed;
-  });
-}
+    tokens.forEach((d, i) => {
+      d.r = scale(d.value || 1);
+      const angle = (i / tokens.length) * Math.PI * 2;
+      d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
+      d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
+      d.vx = (Math.random() - 0.5) * initialSpeed;
+      d.vy = (Math.random() - 0.5) * initialSpeed;
+    });
+  }
 
   function resolveCollisions(iterations = 200) {
-  const padding = 3; // same as your collisionPadding
-  for (let k = 0; k < iterations; k++) {
-    for (let i = 0; i < tokens.length; i++) {
-      for (let j = i + 1; j < tokens.length; j++) {
-        const a = tokens[i], b = tokens[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = a.r + b.r + padding;
-        if (dist < minDist) {
-          const overlap = (minDist - dist) / 2;
-          const nx = dx / (dist || 0.01); // avoid divide by zero
-          const ny = dy / (dist || 0.01);
-          a.x -= nx * overlap;
-          a.y -= ny * overlap;
-          b.x += nx * overlap;
-          b.y += ny * overlap;
+    const padding = 3;
+    for (let k = 0; k < iterations; k++) {
+      for (let i = 0; i < tokens.length; i++) {
+        for (let j = i + 1; j < tokens.length; j++) {
+          const a = tokens[i], b = tokens[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = a.r + b.r + padding;
+          if (dist < minDist) {
+            const overlap = (minDist - dist) / 2;
+            const nx = dx / (dist || 0.01);
+            const ny = dy / (dist || 0.01);
+            a.x -= nx * overlap; a.y -= ny * overlap;
+            b.x += nx * overlap; b.y += ny * overlap;
+          }
         }
       }
     }
   }
-}
 
-
-
-// 👇 Run once at page load
-computeRadius(currentPeriod);
-setInitialPositions();
-resolveCollisions(); // NEW: avoid overlaps
-
-// 👇 Run again on resize
-window.addEventListener("resize", () => {
+  // 👇 Run once at page load
   computeRadius(currentPeriod);
   setInitialPositions();
-  resolveCollisions(); // keep desktop filled
-});
+  resolveCollisions();
 
-
-
-// --- Run ---
-computeRadius(currentPeriod);
-setInitialPositions();
-
-
-
-  computeRadius(currentPeriod);
-
-  const padding = 10;
-  tokens.forEach((d,i) => {
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - padding);
-    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - padding);
-    d.vx = (Math.random()-0.5)*initialSpeed;
-    d.vy = (Math.random()-0.5)*initialSpeed;
+  // 👇 Run again on resize
+  window.addEventListener("resize", () => {
+    computeRadius(currentPeriod);
+    setInitialPositions();
+    resolveCollisions();
   });
 
+  // ----- NODE CREATION -----
   const node = svg.selectAll("g").data(tokens).enter().append("g")
     .attr("transform", d => `translate(${d.x},${d.y})`)
-    .style("cursor","pointer");
+    .style("cursor", "pointer");
 
   const circles = node.append("circle")
-  .attr("r", d=>d.r)
-  .attr("fill","none")
-  .attr("stroke",d=>getChange(d)>=0?"#01fe41":"#fe0289")
-  .attr("stroke-width",3)
-  .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+    .attr("r", d => d.r)
+    .attr("fill", "none")
+    .attr("stroke", d => getChange(d) >= 0 ? "#01fe41" : "#fe0289")
+    .attr("stroke-width", 3)
+    .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
 
-node.on("mouseover", function(event,d){
-  d3.select(this).select("circle")
-    .attr("stroke","#fff")
-    .style("filter","drop-shadow(0 0 30px #fff)");
-}).on("mouseout", function(event,d){
-  d3.select(this).select("circle")
-    .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
-    .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
-});
+  node.on("mouseover", function(event, d) {
+    d3.select(this).select("circle")
+      .attr("stroke", "#fff")
+      .style("filter", "drop-shadow(0 0 30px #fff)");
+  }).on("mouseout", function(event, d) {
+    d3.select(this).select("circle")
+      .attr("stroke", getChange(d) >= 0 ? "#01fe41" : "#fe0289")
+      .style("filter", getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
+  });
 
-  node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
-    .append("circle").attr("r",d=>d.r*0.85);
+  node.append("clipPath").attr("id", (d, i) => `clip-${i}`)
+    .append("circle").attr("r", d => d.r * 0.85);
 
   node.append("image")
-    .attr("xlink:href",d=>d.logo)
-    .attr("x",d=>-d.r*0.85)
-    .attr("y",d=>-d.r*0.85)
-    .attr("width",d=>2*d.r*0.85)
-    .attr("height",d=>2*d.r*0.85)
-    .attr("clip-path",(d,i)=>`url(#clip-${i})`);
+    .attr("xlink:href", d => d.logo)
+    .attr("x", d => -d.r * 0.85)
+    .attr("y", d => -d.r * 0.85)
+    .attr("width", d => 2 * d.r * 0.85)
+    .attr("height", d => 2 * d.r * 0.85)
+    .attr("clip-path", (d, i) => `url(#clip-${i})`);
 
-  function addTextWithBackground(g,textStr,dy){
-    const text=g.append("text").attr("dy",dy).text(textStr)
-      .attr("text-anchor","middle").attr("fill","#fff")
-      .attr("font-weight","700").style("pointer-events","none")
-      .style("text-shadow","2px 2px 4px #000");
-    const bbox=text.node().getBBox();
-    g.insert("rect","text")
-      .attr("x",bbox.x-4).attr("y",bbox.y-2)
-      .attr("width",bbox.width+8).attr("height",bbox.height+4)
-      .attr("rx",3).attr("fill","rgba(0,0,0,0.5)");
+  function addTextWithBackground(g, textStr, dy) {
+    const text = g.append("text").attr("dy", dy).text(textStr)
+      .attr("text-anchor", "middle").attr("fill", "#fff")
+      .attr("font-weight", "700").style("pointer-events", "none")
+      .style("text-shadow", "2px 2px 4px #000");
+    const bbox = text.node().getBBox();
+    g.insert("rect", "text")
+      .attr("x", bbox.x - 4).attr("y", bbox.y - 2)
+      .attr("width", bbox.width + 8).attr("height", bbox.height + 4)
+      .attr("rx", 3).attr("fill", "rgba(0,0,0,0.5)");
   }
 
-  node.each(function(d){
-    addTextWithBackground(d3.select(this),d.ticker,-4);
-    addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
+  node.each(function(d) {
+    addTextWithBackground(d3.select(this), d.ticker, -4);
+    addTextWithBackground(d3.select(this), (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
   });
 
   // Popup update with thousand separator using comma
@@ -576,6 +541,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
