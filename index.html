@@ -299,41 +299,56 @@ function setInitialPositions() {
   const paddingAdjusted = width < 768 ? 12 : 5;
   const scale = getRadiusScale();
 
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const maxRadius = Math.min(width, height) / 2 * 0.9; // keep bubbles inside container
+  if (width < 768) {
+    // MOBILE: maintain previous layout (radial)
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const padding = 10;
+    tokens.forEach((d, i) => {
+      d.r = scale(d.value || 1);
+      const angle = (i / tokens.length) * Math.PI * 2;
+      d.x = centerX + Math.cos(angle) * (width / 2 - d.r - padding);
+      d.y = centerY + Math.sin(angle) * (height / 2 - d.r - padding);
+      d.vx = (Math.random() - 0.5) * initialSpeed;
+      d.vy = (Math.random() - 0.5) * initialSpeed;
+    });
+  } else {
+    // DESKTOP: fill container fully
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxContainerRadius = Math.min(width, height) / 2 * 0.95;
 
-  tokens.forEach(d => {
-    d.r = scale(d.value || 1);
+    tokens.forEach(d => {
+      d.r = scale(d.value || 1);
 
-    let safe = false;
-    let attempts = 0;
-    while (!safe && attempts < 500) {
-      // --- Bias position toward center ---
-      const angle = Math.random() * 2 * Math.PI;
-      const radius = Math.sqrt(Math.random()) * (maxRadius - d.r); // sqrt for denser center
-      d.x = centerX + Math.cos(angle) * radius;
-      d.y = centerY + Math.sin(angle) * radius;
+      let safe = false;
+      let attempts = 0;
+      while (!safe && attempts < 500) {
+        const angle = Math.random() * 2 * Math.PI;
+        const radius = Math.sqrt(Math.random()) * (maxContainerRadius - d.r);
+        d.x = centerX + Math.cos(angle) * radius;
+        d.y = centerY + Math.sin(angle) * radius;
 
-      safe = true;
-      for (let i = 0; i < tokens.indexOf(d); i++) {
-        const other = tokens[i];
-        const dx = d.x - other.x;
-        const dy = d.y - other.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < d.r + other.r + paddingAdjusted) {
-          safe = false;
-          break;
+        safe = true;
+        for (let i = 0; i < tokens.indexOf(d); i++) {
+          const other = tokens[i];
+          const dx = d.x - other.x;
+          const dy = d.y - other.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < d.r + other.r + paddingAdjusted) {
+            safe = false;
+            break;
+          }
         }
+        attempts++;
       }
-      attempts++;
-    }
 
-    // Random small velocity
-    d.vx = (Math.random() - 0.5) * initialSpeed;
-    d.vy = (Math.random() - 0.5) * initialSpeed;
-  });
+      d.vx = (Math.random() - 0.5) * initialSpeed;
+      d.vy = (Math.random() - 0.5) * initialSpeed;
+    });
+  }
 }
+
 
 // 👇 Run once at page load
 setInitialPositions();
@@ -578,4 +593,5 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
