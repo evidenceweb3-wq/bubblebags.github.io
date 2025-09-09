@@ -269,30 +269,30 @@ resolveCollisions();
   function computeRadius(period) {
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const isMobile = width < 768;
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Base scale from change %
-  let baseScale = d3.scaleSqrt()
+  // --- Target total area to ~90% of container ---
+  const fillFactor = 0.9;
+  const totalArea = width * height * fillFactor;
+
+  // Each bubble gets this much area (approx)
+  const avgArea = totalArea / tokens.length;
+  let baseRadius = Math.sqrt(avgArea / Math.PI);
+
+  // --- Mobile (smaller, safe size) ---
+  if (width < 768) {
+    baseRadius = Math.min(baseRadius * 1.2, width / 6);
+  }
+
+  // --- Scale radius by % change, but keep balance ---
+  const scale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, maxRadius]);
+    .range([baseRadius * 0.6, baseRadius * 1.4]); // spread around base radius
 
   tokens.forEach(d => {
-    d.r = baseScale(Math.abs(Number(d["change" + period] || 0)));
+    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
-
-  if (!isMobile) {
-    // --- Desktop only adjustment to fill container ---
-    const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
-    const containerArea = width * height * 0.95; // tighter fill target
-    let scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
-
-    // Grow/shrink all radii
-    tokens.forEach(d => {
-      d.r = d.r * scaleFactor;
-    });
-  }
 }
 
 
@@ -570,6 +570,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
