@@ -55,8 +55,8 @@ button {
 button.active { background: #ff8c00; color: #000; }
 
 #container {
-  width: 95vmin;
-  height: 80vmin;
+  width: 90vmin;
+  height: calc(90vmin * 9 / 16); /* desktop: 16:9 ratio */
   background: #111;
   border: 2px solid #ff8c00;
   border-radius: 12px;
@@ -64,6 +64,8 @@ button.active { background: #ff8c00; color: #000; }
   overflow: hidden;
   box-shadow: 0 0 25px #ff8c00;
   user-select: none;
+  max-width: 95vw;
+  max-height: 80vh;
 }
 
 svg { width: 100%; height: 100%; }
@@ -114,20 +116,19 @@ text {
 @media (max-width: 768px) {
   body {
     justify-content: center; /* vertically center all content */
-    overflow: hidden;        /* no scroll */
     padding: 0 8px;
   }
 
   header {
-    margin: 20px 0 10px 0; /* move header lower on mobile */
+    margin: 10px 0; /* tighter spacing on mobile */
   }
 
   header h2 { 
-    font-size: 14px; /* slightly smaller "Powered By" */
+    font-size: 14px;
     margin: 2px 0; 
   }
   header h1 { 
-    font-size: 28px; /* slightly smaller "Before Satoshi" */
+    font-size: 24px;
     margin: 0; 
   }
 
@@ -145,15 +146,16 @@ text {
   }
 
   #container {
-    height: 65vmin;
-    max-height: 80vh;
-    width: 95vmin;
+    width: 90vmin;
+    height: calc(90vmin * 16 / 9); /* mobile: 9:16 vertical */
+    max-height: 85vh;
   }
 
   #fund { font-size: 14px; }
   #fund span.label, #fund span.wallet { font-size: 14px; }
 }
 </style>
+
 
 
 </head>
@@ -539,3 +541,4 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
