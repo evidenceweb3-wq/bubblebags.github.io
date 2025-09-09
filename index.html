@@ -559,96 +559,145 @@ top5Btn.addEventListener("click", async ()=>{
     } catch(e){ console.warn("Error fetching", d.pairId); }
   }));
 
-  // Top 5 tokens por MCAP
-  const topTokens = tokens.sort((a,b)=>b.mcap - a.mcap).slice(0,5);
+  // ----- TOP 5 BUTTON -----
+const top5Btn = document.getElementById("top5Btn");
+top5Btn.addEventListener("click", async () => {
+  document.querySelectorAll("#buttons button").forEach(b => b.classList.remove("active"));
+  top5Btn.classList.add("active");
 
-  // Mostrar solo top 5
+  // 🔹 Obtener MCAP de cada token
+  await Promise.all(tokens.map(async d => {
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+      const p = (await res.json()).pairs?.[0];
+      if (p?.baseToken?.symbol) {
+        d.price = Number(p.priceUsd);
+        d.mcap = d.price * d.supply;
+        d.change = Number(p.priceChange?.h24 || 0); // para color
+      }
+    } catch (e) { console.warn("Error fetching", d.pairId); }
+  }));
+
+  // 🔹 Top 5 tokens por MCAP
+  const topTokens = tokens.sort((a, b) => b.mcap - a.mcap).slice(0, 5);
+
+  // 🔹 Mostrar solo top 5
   node.style("display", d => topTokens.includes(d) ? "block" : "none");
 
-  // Ajustar radii proporcional al MCAP
-  const minTop = d3.min(topTokens.map(d => d.mcap));
-  const maxTop = d3.max(topTokens.map(d => d.mcap));
-  topTokens.forEach(d=>{
-    d.r = minRadius + (d.mcap - minTop)/(maxTop - minTop) * (maxRadius - minRadius);
-  });
-
-  // Reposicionar top 5 en el centro
+  // 🔹 Calcular radios para llenar contenedor (~70% del área)
   const width = container.clientWidth;
   const height = container.clientHeight;
+  const totalArea = width * height * 0.7;
+  const sumMcap = d3.sum(topTokens.map(d => d.mcap));
+
+  topTokens.forEach(d => {
+    const frac = d.mcap / sumMcap;
+    d.r = Math.sqrt((frac * totalArea) / Math.PI);
+    d.r = Math.max(minRadius, Math.min(maxRadius, d.r)); // evitar radios extremos
+  });
+
+  // 🔹 Simulación para centrar y separar burbujas
   const sim = d3.forceSimulation(topTokens)
-    .force("x", d3.forceX(width/2).strength(0.1))
-    .force("y", d3.forceY(height/2).strength(0.1))
+    .force("x", d3.forceX(width / 2).strength(0.2))
+    .force("y", d3.forceY(height / 2).strength(0.2))
     .force("collide", d3.forceCollide(d => d.r + collisionPadding))
     .stop();
 
-  for(let i=0;i<500;i++) sim.tick();
+  for (let i = 0; i < 700; i++) sim.tick(); // más ticks para burbujas grandes
 
-  topTokens.forEach(d=>{
-    d.x = Math.max(d.r, Math.min(width-d.r, d.x));
-    d.y = Math.max(d.r, Math.min(height-d.r, d.y));
+  // 🔹 Limitar posiciones dentro del contenedor
+  topTokens.forEach(d => {
+    d.x = Math.max(d.r, Math.min(width - d.r, d.x));
+    d.y = Math.max(d.r, Math.min(height - d.r, d.y));
   });
 
-  node.transition().duration(500)
-    .attr("transform", d=>`translate(${d.x},${d.y})`)
-    .select("circle")
-    .attr("r", d=>d.r);
+  // 🔹 Animaciones y actualización de burbujas
+  node.transition().duration(600)
+    .attr("transform", d => `translate(${d.x},${d.y})`);
 
-  node.select("clipPath circle").transition().duration(500)
-    .attr("r", d=>d.r*0.85);
+  node.select("circle").transition().duration(600)
+    .attr("r", d => d.r)
+    .attr("stroke", d => d.change >= 0 ? "#01fe41" : "#fe0289")
+    .style("filter", d => d.change >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
 
-  node.select("image").transition().duration(500)
-    .attr("x", d=>-d.r*0.85)
-    .attr("y", d=>-d.r*0.85)
-    .attr("width", d=>2*d.r*0.85)
-    .attr("height", d=>2*d.r*0.85);
+  node.select("clipPath circle").transition().duration(600)
+    .attr("r", d => d.r * 0.85);
+
+  node.select("image").transition().duration(600)
+    .attr("x", d => -d.r * 0.85)
+    .attr("y", d => -d.r * 0.85)
+    .attr("width", d => 2 * d.r * 0.85)
+    .attr("height", d => 2 * d.r * 0.85);
+
+  // 🔹 Actualizar etiquetas
+  node.each(function (d) {
+    const g = d3.select(this);
+    g.selectAll("text").remove();
+    g.selectAll("rect").remove();
+    addTextWithBackground(g, d.ticker, -4);
+    addTextWithBackground(g, (d.change > 0 ? "+" : "") + d.change.toFixed(1) + "%", 16);
+  });
 });
 
-  window.addEventListener("resize", () => {
-  // 🔹 Adjust radius and collision padding for mobile
+// 🔹 Mantener responsive al redimensionar
+window.addEventListener("resize", () => {
   adjustForMobile();
 
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  // 1️⃣ Recompute radii
-  computeRadius(currentPeriod);
+  if (top5Btn.classList.contains("active")) {
+    // Recalcular radios y posiciones para top 5
+    const topTokens = tokens.sort((a, b) => b.mcap - a.mcap).slice(0, 5);
+    const totalArea = width * height * 0.7;
+    const sumMcap = d3.sum(topTokens.map(d => d.mcap));
 
-  // 2️⃣ Re-run simulation to reposition bubbles
-  runSimulation();
-  
-  // 3️⃣ Update bubble positions
-  node.attr("transform", d => `translate(${d.x},${d.y})`);
+    topTokens.forEach(d => {
+      const frac = d.mcap / sumMcap;
+      d.r = Math.sqrt((frac * totalArea) / Math.PI);
+      d.r = Math.max(minRadius, Math.min(maxRadius, d.r));
+    });
 
-  // 4️⃣ Update circle radius
-  node.select("circle").attr("r", d => d.r);
+    const sim = d3.forceSimulation(topTokens)
+      .force("x", d3.forceX(width / 2).strength(0.2))
+      .force("y", d3.forceY(height / 2).strength(0.2))
+      .force("collide", d3.forceCollide(d => d.r + collisionPadding))
+      .stop();
 
-  // 5️⃣ Update clipPath radius
-  node.select("clipPath circle").attr("r", d => d.r * 0.85);
+    for (let i = 0; i < 700; i++) sim.tick();
 
-  // 6️⃣ Update image size & position
-  node.select("image")
+    topTokens.forEach(d => {
+      d.x = Math.max(d.r, Math.min(width - d.r, d.x));
+      d.y = Math.max(d.r, Math.min(height - d.r, d.y));
+    });
+
+    node.transition().duration(500).attr("transform", d => `translate(${d.x},${d.y})`);
+    node.select("circle").attr("r", d => d.r);
+    node.select("clipPath circle").attr("r", d => d.r * 0.85);
+    node.select("image")
       .attr("x", d => -d.r * 0.85)
       .attr("y", d => -d.r * 0.85)
       .attr("width", d => 2 * d.r * 0.85)
       .attr("height", d => 2 * d.r * 0.85);
 
-  // 7️⃣ Update text labels
-  node.each(function(d){
-    const g = d3.select(this);
-    g.selectAll("text").remove();
-    g.selectAll("rect").remove();
-    addTextWithBackground(g, d.ticker, -4);
-    addTextWithBackground(g, (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
-  });
+    node.each(function (d) {
+      const g = d3.select(this);
+      g.selectAll("text").remove();
+      g.selectAll("rect").remove();
+      addTextWithBackground(g, d.ticker, -4);
+      addTextWithBackground(g, (d.change > 0 ? "+" : "") + d.change.toFixed(1) + "%", 16);
+    });
+  } else {
+    // Si no es top5, correr tu lógica normal
+    computeRadius(currentPeriod);
+    runSimulation();
+  }
 });
 
-
-
-
-})();
 </script>
 </body>
 </html>
+
 
 
 
