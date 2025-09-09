@@ -183,7 +183,9 @@ text {
   <button data-period="1">1h</button>
   <button data-period="6">6h</button>
   <button data-period="24" class="active">24h</button>
+  <button id="top5Btn">TOP 5</button> <!-- Nuevo botón -->
 </div>
+
 
 <div id="container">
   <svg id="svg"></svg>
@@ -491,46 +493,115 @@ function runSimulation() {
   animate();
 
   // ----- BUTTONS -----
-  document.querySelectorAll("#buttons button").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      currentPeriod = btn.dataset.period;
+document.querySelectorAll("#buttons button").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    // Si es TOP 5, manejaremos aparte
+    if(btn.id === "top5Btn") return; // lo dejamos para el siguiente bloque
 
-      await Promise.all(tokens.map(async d=>{
-        try {
-          const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
-          const p = (await res.json()).pairs?.[0];
-          if(p?.baseToken?.symbol){
-            d["change1"] = Number(p.priceChange?.h1 || 0);
-            d["change6"] = Number(p.priceChange?.h6 || 0);
-            d["change24"] = Number(p.priceChange?.h24 || 0);
-          }
-        } catch(e){ console.warn("Error fetching", d.pairId); }
-      }));
+    document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPeriod = btn.dataset.period;
 
-      computeRadius(currentPeriod);
-      runSimulation();
+    // Restore all nodes visible
+    node.style("display", "block");
 
-      circles.transition().duration(500)
-        .attr("r", d=>d.r)
-        .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
-        .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+    await Promise.all(tokens.map(async d=>{
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+        const p = (await res.json()).pairs?.[0];
+        if(p?.baseToken?.symbol){
+          d["change1"] = Number(p.priceChange?.h1 || 0);
+          d["change6"] = Number(p.priceChange?.h6 || 0);
+          d["change24"] = Number(p.priceChange?.h24 || 0);
+        }
+      } catch(e){ console.warn("Error fetching", d.pairId); }
+    }));
 
-      svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+    computeRadius(currentPeriod);
+    runSimulation();
 
-      node.select("image").transition().duration(500)
-        .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
-        .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
+    circles.transition().duration(500)
+      .attr("r", d=>d.r)
+      .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
+      .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
-      node.each(function(d){
-        const g = d3.select(this);
-        g.selectAll("text").remove(); g.selectAll("rect").remove();
-        addTextWithBackground(g, d.ticker, -4);
-        addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
-      });
+    svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+
+    node.select("image").transition().duration(500)
+      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+      .attr("width", d=>2*d.r*0.85)
+      .attr("height", d=>2*d.r*0.85);
+
+    node.each(function(d){
+      const g = d3.select(this);
+      g.selectAll("text").remove(); g.selectAll("rect").remove();
+      addTextWithBackground(g, d.ticker, -4);
+      addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
     });
   });
+});
+
+// ----- TOP 5 BUTTON -----
+const top5Btn = document.getElementById("top5Btn");
+top5Btn.addEventListener("click", async ()=>{
+  document.querySelectorAll("#buttons button").forEach(b => b.classList.remove("active"));
+  top5Btn.classList.add("active");
+
+  // Obtener MCAP de cada token
+  await Promise.all(tokens.map(async d=>{
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+      const p = (await res.json()).pairs?.[0];
+      if(p?.baseToken?.symbol){
+        d.price = Number(p.priceUsd);
+        d.mcap = d.price * d.supply;
+      }
+    } catch(e){ console.warn("Error fetching", d.pairId); }
+  }));
+
+  // Top 5 tokens por MCAP
+  const topTokens = tokens.sort((a,b)=>b.mcap - a.mcap).slice(0,5);
+
+  // Mostrar solo top 5
+  node.style("display", d => topTokens.includes(d) ? "block" : "none");
+
+  // Ajustar radii proporcional al MCAP
+  const minTop = d3.min(topTokens.map(d => d.mcap));
+  const maxTop = d3.max(topTokens.map(d => d.mcap));
+  topTokens.forEach(d=>{
+    d.r = minRadius + (d.mcap - minTop)/(maxTop - minTop) * (maxRadius - minRadius);
+  });
+
+  // Reposicionar top 5 en el centro
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const sim = d3.forceSimulation(topTokens)
+    .force("x", d3.forceX(width/2).strength(0.1))
+    .force("y", d3.forceY(height/2).strength(0.1))
+    .force("collide", d3.forceCollide(d => d.r + collisionPadding))
+    .stop();
+
+  for(let i=0;i<500;i++) sim.tick();
+
+  topTokens.forEach(d=>{
+    d.x = Math.max(d.r, Math.min(width-d.r, d.x));
+    d.y = Math.max(d.r, Math.min(height-d.r, d.y));
+  });
+
+  node.transition().duration(500)
+    .attr("transform", d=>`translate(${d.x},${d.y})`)
+    .select("circle")
+    .attr("r", d=>d.r);
+
+  node.select("clipPath circle").transition().duration(500)
+    .attr("r", d=>d.r*0.85);
+
+  node.select("image").transition().duration(500)
+    .attr("x", d=>-d.r*0.85)
+    .attr("y", d=>-d.r*0.85)
+    .attr("width", d=>2*d.r*0.85)
+    .attr("height", d=>2*d.r*0.85);
+});
 
   window.addEventListener("resize", () => {
   // 🔹 Adjust radius and collision padding for mobile
@@ -578,6 +649,7 @@ function runSimulation() {
 </script>
 </body>
 </html>
+
 
 
 
