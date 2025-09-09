@@ -250,40 +250,42 @@ text {
     .map(r => r.value);
 
   // --- Compute radius ---
-  function computeRadius(period) {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+function computeRadius(period) {
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-    let scale;
-    if (width >= 768) {
-      // Desktop: adjust to fill container
-      const fillFactor = 0.9;
-      const approxArea = (width * height * fillFactor) / tokens.length;
-      const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
-      scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
-    } else {
-      // Mobile: simple scale
-      scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius, maxRadius * 0.6]);
-    }
-
-    tokens.forEach(d => { d.r = scale(Math.abs(Number(d["change" + period] || 0))); });
+  let scale;
+  if (width >= 768) {
+    // Desktop: fill container better
+    const fillFactor = 0.95; // more aggressive
+    const approxArea = (width * height * fillFactor) / tokens.length;
+    const maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+    scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius * 1.2, Math.min(maxRadius, maxSafeRadius)]); 
+    // increased minRadius slightly to avoid tiny bubbles
+  } else {
+    // Mobile: smaller scale
+    scale = d3.scaleSqrt().domain([0, maxVal]).range([minRadius, maxRadius * 0.6]);
   }
 
-  // --- Set initial positions ---
-  function setInitialPositions() {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const padding = 5;
+  tokens.forEach(d => { d.r = scale(Math.abs(Number(d["change" + period] || 0))); });
+}
 
-    tokens.forEach((d, i) => {
-      const angle = (i / tokens.length) * 2 * Math.PI;
-      d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - padding);
-      d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - padding);
-      d.vx = (Math.random() - 0.5) * initialSpeed;
-      d.vy = (Math.random() - 0.5) * initialSpeed;
-    });
-  }
+// --- Set initial positions ---
+function setInitialPositions() {
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const padding = 5;
+
+  // Random initial placement in container bounds to fill better
+  tokens.forEach(d => {
+    d.x = padding + Math.random() * (width - 2 * padding);
+    d.y = padding + Math.random() * (height - 2 * padding);
+    d.vx = (Math.random() - 0.5) * initialSpeed;
+    d.vy = (Math.random() - 0.5) * initialSpeed;
+  });
+}
+
 
   computeRadius(currentPeriod);
   setInitialPositions();
@@ -315,42 +317,69 @@ text {
   svg.on("mousemove", (event) => { const [mx, my] = d3.pointer(event); mouse.x = mx; mouse.y = my; });
 
   function animate() {
-    tokens.forEach(d => {
-      const dx = mouse.x - d.x, dy = mouse.y - d.y;
-      d.vx += dx * motionStrength; d.vy += dy * motionStrength;
-      d.x += d.vx; d.y += d.vy;
-      d.vx *= 0.98; d.vy *= 0.98;
-      if (d.x - d.r < 0) { d.x = d.r; d.vx *= -1; }
-      if (d.x + d.r > container.clientWidth) { d.x = container.clientWidth - d.r; d.vx *= -1; }
-      if (d.y - d.r < 0) { d.y = d.r; d.vy *= -1; }
-      if (d.y + d.r > container.clientHeight) { d.y = container.clientHeight - d.r; d.vy *= -1; }
-    });
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const center = { x: width / 2, y: height / 2 };
 
-    // Collisions
-    for (let i = 0; i < tokens.length; i++) {
-      for (let j = i + 1; j < tokens.length; j++) {
-        const a = tokens[i], b = tokens[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = a.r + b.r + collisionPadding;
-        if (dist < minDist) {
-          const overlap = (minDist - dist) / 2;
-          const nx = dx / dist, ny = dy / dist;
-          a.x -= nx * overlap; a.y -= ny * overlap;
-          b.x += nx * overlap; b.y += ny * overlap;
-          const dot = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-          if (dot > 0) {
-            const k = dot * 0.5;
-            a.vx -= k * nx; a.vy -= k * ny;
-            b.vx += k * nx; b.vy += k * ny;
-          }
-        }
+  tokens.forEach(d => {
+    // Attraction to mouse
+    const dxMouse = mouse.x - d.x, dyMouse = mouse.y - d.y;
+    d.vx += dxMouse * motionStrength;
+    d.vy += dyMouse * motionStrength;
+
+    // Weak attraction to center (keeps bubbles packed)
+    const dxCenter = center.x - d.x, dyCenter = center.y - d.y;
+    d.vx += dxCenter * motionStrength * 0.05;
+    d.vy += dyCenter * motionStrength * 0.05;
+
+    // Apply velocity
+    d.x += d.vx;
+    d.y += d.vy;
+
+    // Friction
+    d.vx *= 0.95;
+    d.vy *= 0.95;
+
+    // Boundary check
+    if (d.x - d.r < 0) { d.x = d.r; d.vx *= -0.5; }
+    if (d.x + d.r > width) { d.x = width - d.r; d.vx *= -0.5; }
+    if (d.y - d.r < 0) { d.y = d.r; d.vy *= -0.5; }
+    if (d.y + d.r > height) { d.y = height - d.r; d.vy *= -0.5; }
+  });
+
+  // --- Tight collisions ---
+  for (let i = 0; i < tokens.length; i++) {
+    for (let j = i + 1; j < tokens.length; j++) {
+      const a = tokens[i], b = tokens[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist = a.r + b.r + collisionPadding;
+
+      if (dist < minDist) {
+        const overlap = (minDist - dist) / 2;
+        const nx = dx / (dist || 1); // avoid divide by zero
+        const ny = dy / (dist || 1);
+
+        a.x -= nx * overlap;
+        a.y -= ny * overlap;
+        b.x += nx * overlap;
+        b.y += ny * overlap;
+
+        // small velocity adjustment to prevent sticking
+        const k = 0.3;
+        a.vx -= nx * k;
+        a.vy -= ny * k;
+        b.vx += nx * k;
+        b.vy += ny * k;
       }
     }
-
-    node.attr("transform", d => `translate(${d.x},${d.y})`);
-    requestAnimationFrame(animate);
   }
+
+  // Update SVG
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+  requestAnimationFrame(animate);
+}
+
   animate();
 
   // ----- BUTTONS -----
@@ -400,4 +429,5 @@ text {
 </script>
 </body>
 </html>
+
 
