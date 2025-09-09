@@ -269,8 +269,8 @@ resolveCollisions();
   function computeRadius(period) {
   const width = container.clientWidth;
   const height = container.clientHeight;
-
   const isMobile = width < 768;
+
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
   // Base scale from change %
@@ -285,16 +285,16 @@ resolveCollisions();
   if (!isMobile) {
     // --- Desktop only adjustment to fill container ---
     const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
-    const containerArea = width * height * 0.85; // target fill
+    const containerArea = width * height * 0.95; // tighter fill target
     let scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
 
-    // shrink if too large
-    const maxPossibleR = Math.min(width, height) / 6; 
+    // Grow/shrink all radii
     tokens.forEach(d => {
-      d.r = Math.min(d.r * scaleFactor, maxPossibleR);
+      d.r = d.r * scaleFactor;
     });
   }
 }
+
 
 
 function setInitialPositions() {
@@ -308,12 +308,15 @@ function setInitialPositions() {
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 
-  // Run collision solver until packed
-  resolveCollisions(300);
+  resolveCollisions(400); // more passes for a packed look
 }
 
+
 function resolveCollisions(iterations = 300) {
-  const padding = 2; // tighter packing
+  const padding = 2;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
   for (let k = 0; k < iterations; k++) {
     for (let i = 0; i < tokens.length; i++) {
       for (let j = i + 1; j < tokens.length; j++) {
@@ -324,25 +327,20 @@ function resolveCollisions(iterations = 300) {
         const minDist = a.r + b.r + padding;
 
         if (dist < minDist) {
-          if (dist === 0) { // avoid stuck same point
+          if (dist === 0) {
             dx = (Math.random() - 0.5) * 0.1;
             dy = (Math.random() - 0.5) * 0.1;
             dist = Math.sqrt(dx * dx + dy * dy);
           }
           const overlap = (minDist - dist) / 2;
-          const nx = dx / dist;
-          const ny = dy / dist;
-          a.x -= nx * overlap;
-          a.y -= ny * overlap;
-          b.x += nx * overlap;
-          b.y += ny * overlap;
+          const nx = dx / dist, ny = dy / dist;
+          a.x -= nx * overlap; a.y -= ny * overlap;
+          b.x += nx * overlap; b.y += ny * overlap;
         }
       }
     }
 
-    // Keep bubbles inside bounds
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    // Keep bubbles inside container
     tokens.forEach(d => {
       if (d.x - d.r < 0) d.x = d.r;
       if (d.x + d.r > width) d.x = width - d.r;
@@ -351,6 +349,7 @@ function resolveCollisions(iterations = 300) {
     });
   }
 }
+
 
 
 
@@ -571,6 +570,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
