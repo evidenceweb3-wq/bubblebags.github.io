@@ -256,22 +256,17 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Safe maximum radius per token based on container area
-  const fillFactor = 0.9; // 90% of container
+  const fillFactor = 0.9; // <-- fill 90% of container
   const approxArea = (width * height * fillFactor) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 2;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-
-  // Mobile: reduce radius slightly to prevent overcrowding
-  if (width < 768) {
-    maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 8); // smaller than before
-  }
+  // Mobile adjustment
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
@@ -281,6 +276,7 @@ text {
     d.r = scale(Math.abs(Number(d["change" + period] || 0)));
   });
 }
+
 
   function getRadiusScale() {
   const container = document.getElementById("container");
@@ -542,6 +538,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
