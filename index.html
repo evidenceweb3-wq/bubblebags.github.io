@@ -256,45 +256,44 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-    const fillFactor = 0.9;
-    const approxArea = (width * height * fillFactor) / tokens.length;
-    let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
+  // Calculate max radius that can fit all bubbles in current container
+  const totalArea = width * height;
+  const areaPerBubble = totalArea / tokens.length;
 
-    if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
+  tokens.forEach(d => {
+    // Base radius proportional to sqrt(areaPerBubble) and scaled by change
+    const relativeSize = Math.abs(Number(d["change" + period] || 0)) / maxVal;
+    d.r = Math.sqrt(areaPerBubble / Math.PI) * (0.6 + 0.4 * relativeSize); 
+    // 0.6 = minimum fraction to avoid too small bubbles
+  });
+}
 
-    const scale = d3.scaleSqrt()
-      .domain([0, maxVal])
-      .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
-
-    tokens.forEach(d => {
-      d.r = scale(Math.abs(Number(d["change" + period] || 0)));
-    });
-  }
 
   // ----- FORCE SIMULATION TO AVOID OVERLAPS -----
   function runSimulation() {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
 
-    const simulation = d3.forceSimulation(tokens)
-      .force("x", d3.forceX(width / 2).strength(0.05))
-      .force("y", d3.forceY(height / 2).strength(0.05))
-      .force("collide", d3.forceCollide(d => d.r + collisionPadding))
-      .stop();
+  const simulation = d3.forceSimulation(tokens)
+    .force("x", d3.forceX(width / 2).strength(0.1))
+    .force("y", d3.forceY(height / 2).strength(0.1))
+    .force("collide", d3.forceCollide(d => d.r + collisionPadding))
+    .stop();
 
-    for (let i = 0; i < 200; i++) simulation.tick();
+  for (let i = 0; i < 300; i++) simulation.tick(); // more ticks for tight packing
 
-    tokens.forEach(d => {
-      d.x = Math.max(d.r, Math.min(width - d.r, d.x));
-      d.y = Math.max(d.r, Math.min(height - d.r, d.y));
-      d.vx = (Math.random() - 0.5) * initialSpeed;
-      d.vy = (Math.random() - 0.5) * initialSpeed;
-    });
-  }
+  tokens.forEach(d => {
+    d.x = Math.max(d.r, Math.min(width - d.r, d.x));
+    d.y = Math.max(d.r, Math.min(height - d.r, d.y));
+    d.vx = (Math.random() - 0.5) * initialSpeed;
+    d.vy = (Math.random() - 0.5) * initialSpeed;
+  });
+}
+
 
   // ----- INITIAL SETUP -----
   computeRadius(currentPeriod);
@@ -501,8 +500,23 @@ text {
     node.attr("transform", d => `translate(${d.x},${d.y})`);
   });
 
+  window.addEventListener("resize", () => {
+  computeRadius(currentPeriod);
+  runSimulation();
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+  node.select("circle").attr("r", d => d.r);
+  node.select("clipPath circle").attr("r", d => d.r * 0.85);
+  node.select("image")
+      .attr("x", d => -d.r * 0.85)
+      .attr("y", d => -d.r * 0.85)
+      .attr("width", d => 2 * d.r * 0.85)
+      .attr("height", d => 2 * d.r * 0.85);
+});
+
+
 })();
 </script>
 </body>
 </html>
+
 
