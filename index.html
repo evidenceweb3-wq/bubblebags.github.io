@@ -55,15 +55,16 @@ button {
 button.active { background: #ff8c00; color: #000; }
 
 #container {
-  width: 95vmin;
-  height: 80vmin;
+  width: 90vw;
+  height: 90vh;
+  max-width: 95vw;
+  max-height: 90vh;
   background: #111;
   border: 2px solid #ff8c00;
   border-radius: 12px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 25px #ff8c00;
-  user-select: none;
 }
 
 svg { width: 100%; height: 100%; }
@@ -114,20 +115,19 @@ text {
 @media (max-width: 768px) {
   body {
     justify-content: center; /* vertically center all content */
-    overflow: hidden;        /* no scroll */
     padding: 0 8px;
   }
 
   header {
-    margin: 20px 0 10px 0; /* move header lower on mobile */
+    margin: 10px 0; /* tighter spacing on mobile */
   }
 
   header h2 { 
-    font-size: 14px; /* slightly smaller "Powered By" */
+    font-size: 14px;
     margin: 2px 0; 
   }
   header h1 { 
-    font-size: 28px; /* slightly smaller "Before Satoshi" */
+    font-size: 24px;
     margin: 0; 
   }
 
@@ -145,15 +145,16 @@ text {
   }
 
   #container {
-    height: 65vmin;
-    max-height: 80vh;
-    width: 95vmin;
+    width: 90vmin;
+    height: calc(90vmin * 16 / 9); /* mobile: 9:16 vertical */
+    max-height: 85vh;
   }
 
   #fund { font-size: 14px; }
   #fund span.label, #fund span.wallet { font-size: 14px; }
 }
 </style>
+
 
 
 </head>
@@ -188,10 +189,10 @@ text {
   const popup = document.getElementById("popup");
 
   const minRadius = 25;
-  const maxRadius = 80;
-  const collisionPadding = 7;
+  const maxRadius = 125;
+  const collisionPadding = 3;
   const motionStrength = 0.00009;
-  const initialSpeed = 0.15;
+  const initialSpeed = 2;
 
   // Tokens
       const tokensData = [
@@ -255,20 +256,17 @@ text {
   function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
 
   function computeRadius(period) {
-  const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Safe maximum radius per token based on container area
-  const approxArea = (width * height) / tokens.length;
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI) - 4;
+  const fillFactor = 0.9; // <-- fill 90% of container
+  const approxArea = (width * height * fillFactor) / tokens.length;
+  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
 
-  // Mobile: reduce radius slightly to prevent overcrowding
-  if (width < 768) {
-    maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 8); // smaller than before
-  }
+  // Mobile adjustment
+  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
 
   const scale = d3.scaleSqrt()
     .domain([0, maxVal])
@@ -280,15 +278,31 @@ text {
 }
 
 
+  function getRadiusScale() {
+  const container = document.getElementById("container");
+  const width = container.clientWidth;
+
+  const minRadius = width < 768 ? 12 : 20;  
+  const maxRadius = width < 768 ? 60 : 140;  
+
+  const maxVal = d3.max(tokens, d => d.value || 1);
+
+  return d3.scaleSqrt()
+    .domain([0, maxVal])
+    .range([minRadius, maxRadius]);
+}
 
 function setInitialPositions() {
   const container = document.getElementById("container");
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  const paddingAdjusted = width < 768 ? 12 : 10; // slightly less padding on mobile to fit bigger bubbles
+  const paddingAdjusted = width < 768 ? 12 : 5;
+  const scale = getRadiusScale();
 
   tokens.forEach((d, i) => {
+    d.r = scale(d.value || 1);
+
     const angle = (i / tokens.length) * Math.PI * 2;
     d.x = width / 2 + Math.cos(angle) * (width / 2 - d.r - paddingAdjusted);
     d.y = height / 2 + Math.sin(angle) * (height / 2 - d.r - paddingAdjusted);
@@ -297,25 +311,14 @@ function setInitialPositions() {
   });
 }
 
+// 👇 Run once at page load
+setInitialPositions();
 
+// 👇 Run again on resize
+window.addEventListener("resize", () => {
+  setInitialPositions();
+});
 
-// Initial positions
-function setInitialPositions() {
-  const container = document.getElementById("container");
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  // Dynamic padding for mobile
-  const paddingAdjusted = width < 768 ? 16 : 10;
-
-  tokens.forEach((d,i) => {
-    const angle = (i / tokens.length) * Math.PI * 2;
-    d.x = width/2 + Math.cos(angle)*(width/2 - d.r - paddingAdjusted);
-    d.y = height/2 + Math.sin(angle)*(height/2 - d.r - paddingAdjusted);
-    d.vx = (Math.random()-0.5)*initialSpeed;
-    d.vy = (Math.random()-0.5)*initialSpeed;
-  });
-}
 
 // --- Run ---
 computeRadius(currentPeriod);
