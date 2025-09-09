@@ -266,45 +266,48 @@ text {
 
   const maxVal = d3.max(tokens, d => Math.abs(Number(d["change" + period] || 0))) || 1;
 
-  // Fill factor closer to 1 for desktop to maximize space
-  const fillFactor = width < 768 ? 0.9 : 0.98;
-  const approxArea = (width * height * fillFactor) / tokens.length;
-
-  let maxSafeRadius = Math.sqrt(approxArea / Math.PI);
-  if (width < 768) maxSafeRadius = Math.min(maxSafeRadius * 1.2, width / 6);
-
-  const scale = d3.scaleSqrt()
+  // Base scale for radius
+  let baseScale = d3.scaleSqrt()
     .domain([0, maxVal])
-    .range([minRadius, Math.min(maxRadius, maxSafeRadius)]);
+    .range([minRadius, maxRadius]);
 
+  // First assign temporary radius
+  tokens.forEach(d => d.r = baseScale(Math.abs(Number(d["change" + period] || 0))));
+
+  // Compute total area of all bubbles
+  const totalBubbleArea = d3.sum(tokens, d => Math.PI * d.r * d.r);
+
+  // Compute container area
+  const containerArea = width * height * 0.95; // fill 95% of container
+
+  // Compute scale factor to make bubbles fill container
+  const scaleFactor = Math.sqrt(containerArea / totalBubbleArea);
+
+  // Apply scale factor to each bubble
   tokens.forEach(d => {
-    d.r = scale(Math.abs(Number(d["change" + period] || 0)));
+    d.r *= scaleFactor;
   });
 }
 
 function setInitialPositions() {
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const padding = 3;
-
   const centerX = width / 2;
   const centerY = height / 2;
+  const padding = 2;
 
-  // Compute radius to fill container more aggressively
-  const maxR = d3.max(tokens, d => d.r);
-  const radiusCircle = Math.min(width, height) / 2 - maxR - padding;
-
-  tokens.forEach((d, i) => {
-    const angle = (i / tokens.length) * Math.PI * 2;
-    // spread bubbles from center to fill the circle completely
-    d.x = centerX + Math.cos(angle) * radiusCircle * (0.7 + 0.3 * Math.random());
-    d.y = centerY + Math.sin(angle) * radiusCircle * (0.7 + 0.3 * Math.random());
+  // Spread bubbles randomly across container
+  tokens.forEach(d => {
+    d.x = Math.random() * (width - 2*d.r) + d.r;
+    d.y = Math.random() * (height - 2*d.r) + d.r;
     d.vx = (Math.random() - 0.5) * initialSpeed;
     d.vy = (Math.random() - 0.5) * initialSpeed;
   });
 
+  // Resolve collisions to prevent overlap
   resolveCollisions();
 }
+
 
 
 
@@ -544,6 +547,7 @@ if(d.webUrl) socialsHTML+=`<a href="${d.webUrl}" target="_blank"><img class="soc
 </script>
 </body>
 </html>
+
 
 
 
