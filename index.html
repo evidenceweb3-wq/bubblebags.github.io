@@ -281,7 +281,7 @@ adjustForMobile();
         xUrl: pair.xUrl,
         webUrl: pair.webUrl
       };
-    } catch (e) { console.warn("Error", pair.pairId); return null; }
+    } catch (e) { console.warn("Error fetching", pair.pairId); return null; }
   }
 
   // ----- INITIAL FETCH -----
@@ -289,51 +289,43 @@ adjustForMobile();
     .filter(r => r.status === "fulfilled" && r.value)
     .map(r => r.value);
 
-  function getChange(d) { return Number(d["change" + currentPeriod] || 0); }
+  function getChange(d){ return Number(d["change"+currentPeriod]||0); }
 
-  function computeRadius(period) {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const maxChange = d3.max(tokens.map(d => Math.abs(Number(d["change" + period] || 0)))) || 1;
+  function computeRadius(period){
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const maxChange = d3.max(tokens.map(d=>Math.abs(d["change"+period]||0)))||1;
+    const totalArea = width*height*0.72;
 
-  // Fill ~85% of container
-  const totalArea = width * height * 0.72;
+    let weights = tokens.map(d => Math.abs(d["change"+period]||0)/maxChange + 0.1);
+    const sumWeights = d3.sum(weights);
 
-  // Weights based on absolute change
-  let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxChange + 0.1);
-  const sumWeights = d3.sum(weights);
+    tokens.forEach((d,i)=>{
+      const frac = weights[i]/sumWeights;
+      d.r = Math.sqrt((frac*totalArea)/Math.PI);
+      d.r = Math.max(minRadius, Math.min(maxRadius, d.r));
+    });
+  }
 
-  // Compute radii
-  tokens.forEach((d,i)=>{
-    const frac = weights[i] / sumWeights;
-    d.r = Math.sqrt((frac * totalArea)/Math.PI);
-    d.r = Math.max(minRadius, Math.min(maxRadius, d.r));
-  });
-}
+  function runSimulation(){
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-function runSimulation() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+    const sim = d3.forceSimulation(tokens)
+      .force("x", d3.forceX(width/2).strength(0.08))
+      .force("y", d3.forceY(height/2).strength(0.08))
+      .force("collide", d3.forceCollide(d=>d.r+collisionPadding))
+      .stop();
 
-  const sim = d3.forceSimulation(tokens)
-    .force("x", d3.forceX(width/2).strength(0.08))
-    .force("y", d3.forceY(height/2).strength(0.08))
-    .force("collide", d3.forceCollide(d => d.r + collisionPadding))
-    .stop();
+    for(let i=0;i<500;i++) sim.tick();
 
-  // Increase ticks for tighter packing
-  for(let i=0;i<500;i++) sim.tick();
-
-  // Clamp within container
-  tokens.forEach(d=>{
-    d.x = Math.max(d.r, Math.min(width-d.r, d.x));
-    d.y = Math.max(d.r, Math.min(height-d.r, d.y));
-    d.vx = (Math.random()-0.5)*initialSpeed;
-    d.vy = (Math.random()-0.5)*initialSpeed;
-  });
-}
-
-
+    tokens.forEach(d=>{
+      d.x = Math.max(d.r, Math.min(width-d.r, d.x));
+      d.y = Math.max(d.r, Math.min(height-d.r, d.y));
+      d.vx = (Math.random()-0.5)*initialSpeed;
+      d.vy = (Math.random()-0.5)*initialSpeed;
+    });
+  }
 
   // ----- INITIAL SETUP -----
   computeRadius(currentPeriod);
@@ -341,15 +333,15 @@ function runSimulation() {
 
   // ----- NODE CREATION -----
   const node = svg.selectAll("g").data(tokens).enter().append("g")
-    .attr("transform", d => `translate(${d.x},${d.y})`)
+    .attr("transform", d=>`translate(${d.x},${d.y})`)
     .style("cursor","pointer");
 
   const circles = node.append("circle")
-    .attr("r", d => d.r)
-    .attr("fill", "none")
-    .attr("stroke", d => getChange(d) >= 0 ? "#01fe41" : "#fe0289")
+    .attr("r", d=>d.r)
+    .attr("fill","none")
+    .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
     .attr("stroke-width", 3)
-    .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
+    .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
   node.on("mouseover", function(event,d){
     d3.select(this).select("circle")
@@ -400,20 +392,17 @@ function runSimulation() {
         const price = Number(p.priceUsd);
         const change = Number(p["priceChange"]?.[`h${currentPeriod}`]||0);
         d["change"+currentPeriod]=change;
-        const mcap = Math.round(price*d.supply);
-        const mcapFormatted = mcap.toLocaleString('en-US');
+        d.mcap = Math.round(price*d.supply);
+        const mcapFormatted = d.mcap.toLocaleString('en-US');
 
         const g = d3.selectAll("g").filter(dd=>dd.pairId===d.pairId);
         g.selectAll("text").remove(); g.selectAll("rect").remove();
         addTextWithBackground(g,d.ticker,-4);
         addTextWithBackground(g,(change>0?"+":"")+change.toFixed(1)+"%",16);
-        const color = change>=0 ? "#01fe41" : "#fe0289";
+        const color = change>=0?"#01fe41":"#fe0289";
         g.select("circle")
           .attr("stroke", color)
-          .style("filter", change>=0
-            ? "drop-shadow(0 0 15px #01fe41)"
-            : "drop-shadow(0 0 15px #fe0289)"
-          );
+          .style("filter", change>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
         let socialsHTML='';
         if(d.xUrl) socialsHTML+=`<a href="${d.xUrl}" target="_blank"><img class="social-icon" src="https://i.postimg.cc/ncpwFVXC/XICON2.png"></a>`;
@@ -424,19 +413,16 @@ function runSimulation() {
           Price: $${price.toFixed(4)}<br>
           MCAP: $${mcapFormatted}<br>
           Change ${currentPeriod}h: <span style="color:${change>=0?'#01fe41':'#fe0289'}">
-  ${(change>0?"+":"")+change.toFixed(2)}%
-</span>
-<br>
+  ${(change>0?"+":"")+change.toFixed(2)}%</span><br>
           ${socialsHTML}
           <span style="font-size:10px;color:#aaa">Last updated: ${new Date().toLocaleTimeString()}</span>`;
-      }catch(e){console.warn("Error updating popup",d.pairId);}
+      }catch(e){ console.warn("Error updating popup",d.pairId); }
     };
   }
 
   node.on("click",(event,d)=>{
     if(popupInterval) clearInterval(popupInterval);
-    const updater=updatePopup(d);
-    updater();
+    const updater=updatePopup(d); updater();
     popupInterval=setInterval(updater,60000);
     popup.style.top="20px"; popup.style.opacity="1";
 
@@ -447,195 +433,122 @@ function runSimulation() {
 
   document.addEventListener("click",()=>{ popup.style.opacity="0"; popup.style.top="-200px"; if(popupInterval) clearInterval(popupInterval); });
 
-  let mouse={x:width/2,y:height/2};
-  svg.on("mousemove",(event)=>{
-    const [mx,my]=d3.pointer(event);
-    mouse.x=mx; mouse.y=my;
-  });
+  let mouse={x:container.clientWidth/2, y:container.clientHeight/2};
+  svg.on("mousemove",(event)=>{ const [mx,my]=d3.pointer(event); mouse.x=mx; mouse.y=my; });
 
-  // ----- ANIMATION & COLLISION -----
+  // ----- ANIMATION -----
   function animate(){
+    tokens.forEach(d=>{ const dx=mouse.x-d.x, dy=mouse.y-d.y; d.vx+=dx*motionStrength; d.vy+=dy*motionStrength; });
     tokens.forEach(d=>{
-      const dx=mouse.x-d.x, dy=mouse.y-d.y;
-      d.vx+=dx*motionStrength; d.vy+=dy*motionStrength;
-    });
-    tokens.forEach(d=>{
-      d.x+=d.vx; d.y+=d.vy;
-      d.vx*=0.98; d.vy*=0.98;
+      d.x+=d.vx; d.y+=d.vy; d.vx*=0.98; d.vy*=0.98;
       if(d.x-d.r<0){d.x=d.r; d.vx*=-1;}
-      if(d.x+d.r>width){d.x=width-d.r; d.vx*=-1;}
+      if(d.x+d.r>container.clientWidth){d.x=container.clientWidth-d.r; d.vx*=-1;}
       if(d.y-d.r<0){d.y=d.r; d.vy*=-1;}
-      if(d.y+d.r>height){d.y=height-d.r; d.vy*=-1;}
+      if(d.y+d.r>container.clientHeight){d.y=container.clientHeight-d.r; d.vy*=-1;}
     });
-    for(let i=0;i<tokens.length;i++){
-      for(let j=i+1;j<tokens.length;j++){
-        const a=tokens[i], b=tokens[j];
-        const dx=b.x-a.x, dy=b.y-a.y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        const minDist=a.r+b.r+collisionPadding;
-        if(dist<minDist){
-          const overlap=(minDist-dist)/2;
-          const nx=dx/dist, ny=dy/dist;
-          a.x-=nx*overlap; a.y-=ny*overlap;
-          b.x+=nx*overlap; b.y+=ny*overlap;
-          const dot=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
-          if(dot>0){
-            const k=dot*0.5;
-            a.vx-=k*nx; a.vy-=k*ny;
-            b.vx+=k*nx; b.vy+=k*ny;
-          }
-        }
-      }
-    }
     node.attr("transform",d=>`translate(${d.x},${d.y})`);
     requestAnimationFrame(animate);
   }
   animate();
 
-  // ----- BUTTONS -----
-document.querySelectorAll("#buttons button").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
-    // Si es TOP 5, manejaremos aparte
-    if(btn.id === "top5Btn") return; // lo dejamos para el siguiente bloque
+  // ----- BUTTONS & Top 5 -----
+  document.querySelectorAll("#buttons button").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      if(btn.id==="top5Btn"){ showTop5(); return; }
+      document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      currentPeriod = btn.dataset.period;
 
-    document.querySelectorAll("#buttons button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentPeriod = btn.dataset.period;
+      await Promise.all(tokens.map(async d=>{
+        try{
+          const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
+          const p = (await res.json()).pairs?.[0];
+          if(p?.baseToken?.symbol){
+            d.change1=Number(p.priceChange?.h1||0);
+            d.change6=Number(p.priceChange?.h6||0);
+            d.change24=Number(p.priceChange?.h24||0);
+            d.mcap = Math.round(Number(p.priceUsd)*d.supply);
+          }
+        }catch(e){ console.warn("Error fetching", d.pairId); }
+      }));
 
-    // Restore all nodes visible
-    node.style("display", "block");
+      computeRadius(currentPeriod);
+      runSimulation();
 
-    await Promise.all(tokens.map(async d=>{
-      try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/solana/${d.pairId}`);
-        const p = (await res.json()).pairs?.[0];
-        if(p?.baseToken?.symbol){
-          d["change1"] = Number(p.priceChange?.h1 || 0);
-          d["change6"] = Number(p.priceChange?.h6 || 0);
-          d["change24"] = Number(p.priceChange?.h24 || 0);
-        }
-      } catch(e){ console.warn("Error fetching", d.pairId); }
-    }));
+      circles.transition().duration(500)
+        .attr("r", d=>d.r)
+        .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
+        .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
 
-    computeRadius(currentPeriod);
-    runSimulation();
+      node.select("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+      node.select("image").transition().duration(500)
+        .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+        .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
 
-    circles.transition().duration(500)
-      .attr("r", d=>d.r)
-      .attr("stroke", d=>getChange(d)>=0?"#01fe41":"#fe0289")
-      .style("filter", d=>getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
-
-    svg.selectAll("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
-
-    node.select("image").transition().duration(500)
-      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
-      .attr("width", d=>2*d.r*0.85)
-      .attr("height", d=>2*d.r*0.85);
-
-    node.each(function(d){
-      const g = d3.select(this);
-      g.selectAll("text").remove(); g.selectAll("rect").remove();
-      addTextWithBackground(g, d.ticker, -4);
-      addTextWithBackground(g, (getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%", 16);
+      node.each(function(d){
+        const g = d3.select(this); g.selectAll("text").remove(); g.selectAll("rect").remove();
+        addTextWithBackground(g,d.ticker,-4);
+        addTextWithBackground(g,(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
+      });
     });
   });
-});
 
-// ----- Top 5 tokens por MCAP -----
-function showTop5() {
-  const topTokens = tokens
-    .sort((a, b) => b.mcap - a.mcap)
-    .slice(0, 5);
+  function showTop5(){
+    const topTokens = tokens.filter(d=>d.mcap).sort((a,b)=>b.mcap-a.mcap).slice(0,5);
+    node.style("display", d=>topTokens.includes(d)?"block":"none");
 
-  // Mostrar solo top 5
-  node.style("display", d => topTokens.includes(d) ? "block" : "none");
+    const minTop = d3.min(topTokens.map(d=>d.mcap));
+    const maxTop = d3.max(topTokens.map(d=>d.mcap));
+    topTokens.forEach(d=>{
+      d.r = minRadius + (d.mcap-minTop)/(maxTop-minTop)*(maxRadius-minRadius);
+    });
 
-  // Ajustar radii proporcional al MCAP
-  const minTop = d3.min(topTokens.map(d => d.mcap));
-  const maxTop = d3.max(topTokens.map(d => d.mcap));
-  topTokens.forEach(d => {
-    d.r = minRadius + (d.mcap - minTop) / (maxTop - minTop) * (maxRadius - minRadius);
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const sim = d3.forceSimulation(topTokens)
+      .force("x", d3.forceX(width/2).strength(0.1))
+      .force("y", d3.forceY(height/2).strength(0.1))
+      .force("collide", d3.forceCollide(d=>d.r+collisionPadding))
+      .stop();
+
+    for(let i=0;i<500;i++) sim.tick();
+    topTokens.forEach(d=>{
+      d.x=Math.max(d.r, Math.min(width-d.r,d.x));
+      d.y=Math.max(d.r, Math.min(height-d.r,d.y));
+    });
+
+    node.transition().duration(500)
+      .attr("transform", d=>`translate(${d.x},${d.y})`);
+    node.select("circle").transition().duration(500).attr("r", d=>d.r);
+    node.select("clipPath circle").transition().duration(500).attr("r", d=>d.r*0.85);
+    node.select("image").transition().duration(500)
+      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+      .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
+  }
+
+  showTop5();
+
+  // ----- RESIZE -----
+  window.addEventListener("resize", ()=>{
+    const width = container.clientWidth, height = container.clientHeight;
+    computeRadius(currentPeriod); runSimulation();
+
+    node.attr("transform", d=>`translate(${d.x},${d.y})`);
+    node.select("circle").attr("r", d=>d.r);
+    node.select("clipPath circle").attr("r", d=>d.r*0.85);
+    node.select("image")
+      .attr("x", d=>-d.r*0.85).attr("y", d=>-d.r*0.85)
+      .attr("width", d=>2*d.r*0.85).attr("height", d=>2*d.r*0.85);
+    node.each(d=>{
+      const g = d3.select(this);
+      g.selectAll("text").remove(); g.selectAll("rect").remove();
+      addTextWithBackground(g,d.ticker,-4);
+      addTextWithBackground(g,(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
+    });
   });
-
-  // Reposicionar top 5 en el centro
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const sim = d3.forceSimulation(topTokens)
-    .force("x", d3.forceX(width / 2).strength(0.1))
-    .force("y", d3.forceY(height / 2).strength(0.1))
-    .force("collide", d3.forceCollide(d => d.r + collisionPadding))
-    .stop();
-
-  for (let i = 0; i < 500; i++) sim.tick();
-
-  topTokens.forEach(d => {
-    d.x = Math.max(d.r, Math.min(width - d.r, d.x));
-    d.y = Math.max(d.r, Math.min(height - d.r, d.y));
-  });
-
-  node.transition().duration(500)
-    .attr("transform", d => `translate(${d.x},${d.y})`)
-    .select("circle")
-    .attr("r", d => d.r);
-
-  node.select("clipPath circle").transition().duration(500)
-    .attr("r", d => d.r * 0.85);
-
-  node.select("image").transition().duration(500)
-    .attr("x", d => -d.r * 0.85)
-    .attr("y", d => -d.r * 0.85)
-    .attr("width", d => 2 * d.r * 0.85)
-    .attr("height", d => 2 * d.r * 0.85);
-}
-
-// Call it once initially if needed
-showTop5();
-
-// ----- Resize listener -----
-window.addEventListener("resize", () => {
-  adjustForMobile();
-
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  // 1️⃣ Recompute radii
-  computeRadius(currentPeriod);
-
-  // 2️⃣ Re-run simulation to reposition bubbles
-  runSimulation();
-  
-  // 3️⃣ Update bubble positions
-  node.attr("transform", d => `translate(${d.x},${d.y})`);
-
-  // 4️⃣ Update circle radius
-  node.select("circle").attr("r", d => d.r);
-
-  // 5️⃣ Update clipPath radius
-  node.select("clipPath circle").attr("r", d => d.r * 0.85);
-
-  // 6️⃣ Update image size & position
-  node.select("image")
-      .attr("x", d => -d.r * 0.85)
-      .attr("y", d => -d.r * 0.85)
-      .attr("width", d => 2 * d.r * 0.85)
-      .attr("height", d => 2 * d.r * 0.85);
-
-  // 7️⃣ Update text labels
-  node.each(function(d){
-    const g = d3.select(this);
-    g.selectAll("text").remove();
-    g.selectAll("rect").remove();
-    addTextWithBackground(g, d.ticker, -4);
-    addTextWithBackground(g, (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
-  });
-});
-
-
-
-
-
 })();
 </script>
 </body>
 </html>
+
 
