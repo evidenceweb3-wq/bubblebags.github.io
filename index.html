@@ -214,7 +214,9 @@ adjustForMobile();
 
   // Tokens
       const tokensData = [
-        { pairId: "DMWkUZ8gwdC27BNi4FrK2amCDxMqQQ525ALfNAEVQq62", logo: "https://postimg.cc/vDY2cGXv", supply: 1000000000 }
+        { pairId: "GNEqyxGV9u8Hz5G3RX1VxUfWCQFuXEP2ckmbLxe1bmyf", logo: "https://i.postimg.cc/Z5D80d4H/concentrtic-TS.png", supply: 998918894, xUrl: "https://x.com/example", webUrl: "https://example.com" },
+        { pairId: "82Q6L714avSh7zE6J43r4u1VUXQ4uYd7C7kHF8T1heAZ", logo: "https://i.postimg.cc/GmGBLH38/twitter.png", supply: 999952686 },
+        { pairId: "3BfzLnxHVaYJNrAP6SxfT7Z8nFe5ybKL6JMTuCrNR8zZ", logo: "https://i.postimg.cc/ZYW6kYN3/catter2.png", supply: 999952686 }
         
       ];
 
@@ -255,13 +257,9 @@ adjustForMobile();
   // Fill ~85% of container
   const totalArea = width * height * 0.72;
 
-  // Exaggerated weights based on absolute change
-let weights = tokens.map(d => {
-  let change = Math.abs(Number(d["change" + period] || 0));
-  return Math.pow(change / maxChange, 2) + 0.05;  // squared exaggeration
-});
-const sumWeights = d3.sum(weights);
-
+  // Weights based on absolute change
+  let weights = tokens.map(d => Math.abs(Number(d["change" + period] || 0)) / maxChange + 0.1);
+  const sumWeights = d3.sum(weights);
 
   // Compute radii
   tokens.forEach((d,i)=>{
@@ -299,55 +297,66 @@ function runSimulation() {
   computeRadius(currentPeriod);
   runSimulation();
 
-  // ----- NODE CREATION -----
-  const node = svg.selectAll("g").data(tokens).enter().append("g")
-    .attr("transform", d => `translate(${d.x},${d.y})`)
-    .style("cursor","pointer");
+ // ----- NODE CREATION -----
+const node = svg.selectAll("g").data(tokens).enter().append("g")
+  .attr("transform", d => `translate(${d.x},${d.y})`)
+  .style("cursor","pointer");
 
-  const circles = node.append("circle")
-    .attr("r", d => d.r)
-    .attr("fill", "none")
-    .attr("stroke", d => getChange(d) >= 0 ? "#01fe41" : "#fe0289")
-    .attr("stroke-width", 3)
-    .style("filter", d => getChange(d) >= 0 ? "drop-shadow(0 0 15px #01fe41)" : "drop-shadow(0 0 15px #fe0289)");
-
-  node.on("mouseover", function(event,d){
-    d3.select(this).select("circle")
-      .attr("stroke","#fff")
-      .style("filter","drop-shadow(0 0 30px #fff)");
-  }).on("mouseout", function(event,d){
-    d3.select(this).select("circle")
-      .attr("stroke",getChange(d)>=0?"#01fe41":"#fe0289")
-      .style("filter", getChange(d)>=0?"drop-shadow(0 0 15px #01fe41)":"drop-shadow(0 0 15px #fe0289)");
+// Single image with glow only (no border, no duplicates)
+node.append("image")
+  .attr("xlink:href", d => d.logo)
+  .attr("x", d => -d.r)
+  .attr("y", d => -d.r)
+  .attr("width", d => 2 * d.r)
+  .attr("height", d => 2 * d.r)
+  .style("filter", d => {
+      const glow = Math.max(15, d.r / 3);
+      return getChange(d) >= 0
+        ? `drop-shadow(0 0 ${glow}px #01fe41)`
+        : `drop-shadow(0 0 ${glow}px #fe0289)`;
   });
 
-  node.append("clipPath").attr("id",(d,i)=>`clip-${i}`)
-    .append("circle").attr("r",d=>d.r*0.85);
+// Hover effect
+node.on("mouseover", function(event,d){
+  const glow = Math.max(25, d.r / 2);
+  d3.select(this).select("image")
+    .style("filter", `drop-shadow(0 0 ${glow}px #fff)`);
+}).on("mouseout", function(event,d){
+  const glow = Math.max(15, d.r / 3);
+  d3.select(this).select("image")
+    .style("filter", getChange(d) >= 0
+      ? `drop-shadow(0 0 ${glow}px #01fe41)`
+      : `drop-shadow(0 0 ${glow}px #fe0289)`);
+});
 
-  node.append("image")
-    .attr("xlink:href",d=>d.logo)
-    .attr("x",d=>-d.r*0.85)
-    .attr("y",d=>-d.r*0.85)
-    .attr("width",d=>2*d.r*0.85)
-    .attr("height",d=>2*d.r*0.85)
-    .attr("clip-path",(d,i)=>`url(#clip-${i})`);
+// ----- TEXT LABELS -----
+function addTextWithBackground(g, textStr, dy){
+  const text = g.append("text")
+    .attr("dy", dy)
+    .text(textStr)
+    .attr("text-anchor","middle")
+    .attr("fill","#fff")
+    .attr("font-weight","700")
+    .style("pointer-events","none")
+    .style("text-shadow","2px 2px 4px #000");
 
-  function addTextWithBackground(g,textStr,dy){
-    const text=g.append("text").attr("dy",dy).text(textStr)
-      .attr("text-anchor","middle").attr("fill","#fff")
-      .attr("font-weight","700").style("pointer-events","none")
-      .style("text-shadow","2px 2px 4px #000");
-    const bbox=text.node().getBBox();
-    g.insert("rect","text")
-      .attr("x",bbox.x-4).attr("y",bbox.y-2)
-      .attr("width",bbox.width+8).attr("height",bbox.height+4)
-      .attr("rx",3).attr("fill","rgba(0,0,0,0.5)");
-  }
+  const bbox = text.node().getBBox();
+  g.insert("rect", "text")
+    .attr("x", bbox.x - 4)
+    .attr("y", bbox.y - 2)
+    .attr("width", bbox.width + 8)
+    .attr("height", bbox.height + 4)
+    .attr("rx", 3)
+    .attr("fill", "rgba(0,0,0,0.5)");
+}
 
-  node.each(function(d){
-    addTextWithBackground(d3.select(this),d.ticker,-4);
-    addTextWithBackground(d3.select(this),(getChange(d)>0?"+":"")+getChange(d).toFixed(1)+"%",16);
-  });
+// Add text to each node
+node.each(function(d){
+  const g = d3.select(this);
+  addTextWithBackground(g, d.ticker, -4);
+  addTextWithBackground(g, (getChange(d) > 0 ? "+" : "") + getChange(d).toFixed(1) + "%", 16);
+});
+
 
   // ----- POPUP -----
   let popupInterval;
@@ -540,6 +549,3 @@ function runSimulation() {
 </script>
 </body>
 </html>
-
-
-
